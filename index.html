@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2A2012">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>乗務実績ビューア</title>
+<style>
+:root{
+  --hi:#8C2E22; --gold:#B8893A; --gold-l:#D4AF52; --gold-d:#8A6520;
+  --parch:#E7D6AB; --parch-l:#F3E8C9; --parch-d:#D8C191;
+  --ink:#2D2113; --ink-2:#5B4824; --ink-3:#7A623A;
+  --panel:#2A2012; --panel-tx:#E9DCBD; --line:#B89A5A;
+  --bg1:#D8C191; --bg2:#E7D6AB;
+  --heat0:#EFE3BF; --heat1:#C89750; --heat2:#A0543A; --heat3:#7A241A;
+  --serif:"Hiragino Mincho ProN","Yu Mincho","YuMincho",serif;
+  --sans:"Hiragino Kaku Gothic ProN","Yu Gothic","YuGothic",sans-serif;
+}
+/* 夜間乗務用ダークモード（暗革ベース） */
+body.dark{
+  --hi:#D06A56; --gold:#C79A4C; --gold-l:#E0C170; --gold-d:#6E5220;
+  --parch:#241B10; --parch-l:#2E2416; --parch-d:#1B140B;
+  --ink:#EDE0C4; --ink-2:#C3AE82; --ink-3:#9A8358;
+  --panel:#15100A; --panel-tx:#E9DCBD; --line:#5A4A2A;
+  --bg1:#140F09; --bg2:#211A10;
+  --heat0:#2A2114; --heat1:#6E5024; --heat2:#9A4230; --heat3:#C25438;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);font-size:14px;color:var(--ink);
+  background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 8%,var(--bg2) 92%,var(--bg1) 100%);
+  min-height:100vh;padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+body.big{font-size:15.5px}
+.num{font-variant-numeric:tabular-nums;font-weight:800}
+header{
+  background:linear-gradient(180deg,#332817,var(--panel));
+  border-bottom:3px solid var(--gold);
+  padding:calc(10px + env(safe-area-inset-top)) 12px 10px;
+  text-align:center;position:sticky;top:0;z-index:20;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+header h1{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--gold-l);letter-spacing:.14em}
+header .sub{font-size:10px;color:var(--panel-tx);opacity:.75;letter-spacing:.2em;margin-top:2px}
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;
+  background:linear-gradient(180deg,var(--panel),#1d1710);
+  border-top:2px solid var(--gold);padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{
+  flex:1;padding:11px 0 9px;background:none;border:none;color:var(--panel-tx);
+  font-family:var(--sans);font-size:13px;letter-spacing:.1em;opacity:.6;
+  border-top:3px solid transparent;
+}
+nav button.on{opacity:1;color:var(--gold-l);border-top-color:var(--gold);font-weight:700}
+main{max-width:760px;margin:0 auto;padding:12px 10px 20px}
+.frame{
+  border:2px solid var(--gold);border-radius:4px;background:var(--parch-l);
+  box-shadow:0 0 0 1px var(--gold-d),0 3px 10px rgba(45,33,19,.25),inset 0 0 24px rgba(184,137,58,.12);
+  padding:12px;margin-bottom:14px;position:relative;
+}
+.frame::before,.frame::after{content:"";position:absolute;width:12px;height:12px;border:2px solid var(--gold-d)}
+.frame::before{top:3px;left:3px;border-right:none;border-bottom:none}
+.frame::after{bottom:3px;right:3px;border-left:none;border-top:none}
+h2.ttl{font-family:var(--serif);font-size:16px;font-weight:700;text-align:center;letter-spacing:.18em;margin-bottom:4px}
+h2.ttl::before,h2.ttl::after{content:"◆";color:var(--gold);font-size:10px;margin:0 8px;vertical-align:2px}
+.rule{height:2px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-l),var(--gold),transparent);margin:2px auto 10px;max-width:88%}
+.gsel{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.gsel button{width:38px;height:34px;border:1.5px solid var(--gold);border-radius:3px;background:var(--parch);color:var(--ink);font-size:16px;font-weight:700}
+.gsel select{
+  font-family:var(--serif);font-size:16px;font-weight:700;color:var(--ink);
+  background:var(--parch);border:1.5px solid var(--gold);border-radius:3px;
+  padding:5px 8px;letter-spacing:.06em;text-align:center;
+}
+.gsel .range{font-size:11px;color:var(--ink-3);width:100%;text-align:center;margin-top:2px}
+.kpi{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--gold-d);
+  border:2px solid var(--gold);border-radius:3px;overflow:hidden;margin-bottom:12px;
+}
+.kpi .cell{background:var(--panel);padding:8px 4px;text-align:center}
+.kpi .lb{font-size:10px;color:var(--gold-l);letter-spacing:.12em;margin-bottom:3px}
+.kpi .vl{font-size:17px;color:var(--panel-tx)}
+.kpi .vl small{font-size:10px;font-weight:400;opacity:.8;margin-left:1px}
+/* ===== カレンダー ===== */
+table.cal{width:100%;border-collapse:collapse;table-layout:fixed}
+table.cal th{font-size:10px;font-weight:700;color:var(--ink-2);padding:3px 0;border-bottom:1.5px solid var(--line);letter-spacing:.1em}
+table.cal th.sun{color:var(--hi)}
+table.cal td{border:1px solid var(--line);height:66px;vertical-align:top;padding:2px 3px;background:var(--parch)}
+table.cal td.out{background:var(--parch-d);opacity:.42}
+table.cal td .d{font-size:10px;color:var(--ink-2);display:flex;align-items:center;gap:2px}
+table.cal td .d .hol{
+  font-size:7.5px;color:#fff;background:var(--hi);border-radius:2px;padding:0 2px;line-height:1.4;font-weight:700;
+}
+table.cal td.holiday .d .dn{color:var(--hi);font-weight:800}
+table.cal td .s{font-size:13px;text-align:right;margin-top:1px;line-height:1.1}
+table.cal td .s small{font-size:9px;font-weight:600;opacity:.85}
+table.cal td .sub{font-size:8px;text-align:right;color:var(--ink-2);line-height:1.25;letter-spacing:-.02em}
+table.cal td .r{font-size:8.5px;color:var(--ink-2);text-align:right;line-height:1.25}
+table.cal td.hit{cursor:pointer}
+table.cal td.dark .d .dn,table.cal td.dark .s,table.cal td.dark .r,table.cal td.dark .sub{color:#F8F0DA}
+table.cal td.dark.holiday .d .dn{color:#FFD9A8}
+.callegend{display:flex;justify-content:space-between;align-items:center;font-size:9.5px;color:var(--ink-3);margin-top:6px}
+.callegend .grad{display:flex;align-items:center;gap:4px}
+.callegend .gbar{width:70px;height:8px;border-radius:2px;background:linear-gradient(90deg,var(--heat0),var(--heat1),var(--heat2),var(--heat3));border:1px solid var(--line)}
+.htoggle{position:absolute;top:calc(8px + env(safe-area-inset-top));right:10px;display:flex;gap:6px}
+.htoggle button{
+  width:34px;height:30px;border:1.5px solid var(--gold);border-radius:4px;
+  background:rgba(233,220,189,.08);color:var(--gold-l);font-size:14px;font-weight:700;line-height:1;
+}
+.htoggle button sup{font-size:9px}
+.htoggle button.on{background:var(--gold);color:var(--panel)}
+/* ===== 表 ===== */
+table.list{width:100%;border-collapse:collapse;font-size:12.5px}
+table.list th{background:var(--panel);color:var(--gold-l);font-size:10.5px;font-weight:700;padding:6px 4px;letter-spacing:.06em;white-space:nowrap}
+table.list td{padding:6px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.list td.n{text-align:right}
+table.list tr.tap{cursor:pointer}
+table.list tr.tap:active{background:var(--parch-d)}
+table.list tr.total td{border-top:2px solid var(--gold);background:var(--parch-d);font-weight:700}
+.scr{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
+.sun-t{color:var(--hi)}
+.hi{color:var(--hi)}
+.cat-b{font-size:10px;color:var(--ink-3)}
+.note{font-size:11px;color:var(--ink-3);margin-top:8px;line-height:1.6}
+.note::before{content:"※ "}
+.warn{color:var(--hi);font-size:11px}
+.fbar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.fbar button{padding:6px 12px;border:1.5px solid var(--gold);border-radius:3px;background:var(--parch);color:var(--ink);font-size:12.5px;font-family:var(--sans)}
+.fbar button.on{background:var(--panel);color:var(--gold-l);font-weight:700}
+/* ===== モーダル ===== */
+#ovl{position:fixed;inset:0;background:rgba(24,17,8,.72);z-index:50;display:none;align-items:flex-end;justify-content:center}
+#ovl.show{display:flex}
+#modal{
+  width:100%;max-width:760px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:var(--parch-l);border:2px solid var(--gold);border-bottom:none;
+  border-radius:10px 10px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.5);
+  padding:14px 14px calc(20px + env(safe-area-inset-bottom));
+}
+#modal .grip{width:44px;height:4px;border-radius:2px;background:var(--gold-d);margin:0 auto 10px}
+#modal h3{font-family:var(--serif);font-size:17px;text-align:center;letter-spacing:.1em}
+#modal .cat-line{text-align:center;font-size:11.5px;color:var(--ink-3);margin:2px 0 10px}
+.bandbar{display:flex;align-items:flex-end;gap:1.5px;height:74px;margin:10px 2px 2px;position:relative}
+.bandbar .b{flex:1;background:linear-gradient(180deg,var(--gold-l),var(--gold));border-radius:1px 1px 0 0;min-height:1px;position:relative;z-index:2}
+.bandbar .b.top{background:linear-gradient(180deg,#c0553f,var(--hi))}
+.gridline{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--line);opacity:.55;z-index:1;pointer-events:none}
+.gridline span{position:absolute;right:0;top:-9px;font-size:8px;color:var(--ink-3);background:var(--parch-l);padding:0 2px;line-height:1}
+body.dark .gridline span{background:var(--parch-l)}
+.bandlbl{display:flex;gap:1.5px;font-size:8px;color:var(--ink-3);margin-bottom:8px}
+.bandlbl span{flex:1;text-align:center}
+.closebtn{display:block;width:100%;margin-top:12px;padding:10px;border:1.5px solid var(--gold);border-radius:4px;background:var(--parch);color:var(--ink);font-size:13px;font-family:var(--sans)}
+.view{display:none}.view.on{display:block}
+.bar-row{display:flex;align-items:center;gap:6px;margin:3px 0}
+.bar-row .m{width:52px;font-size:11px;color:var(--ink-2);text-align:right;flex-shrink:0}
+.bar-row .track{flex:1;height:15px;background:var(--parch-d);border-radius:2px;overflow:hidden}
+.bar-row .fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:2px}
+.bar-row .fill.best{background:linear-gradient(90deg,var(--hi),#c0553f)}
+.bar-row .v{width:64px;font-size:12px;text-align:right;flex-shrink:0}
+.fd-row{display:flex;align-items:center;gap:6px;margin:4px 0}
+.fd-row .lb{width:96px;font-size:11px;color:var(--ink-2);text-align:right;flex-shrink:0}
+.fd-row .track{flex:1;height:17px;background:var(--parch-d);border-radius:2px;overflow:hidden;position:relative}
+.fd-row .fill{height:100%;border-radius:2px}
+.fd-row .v{width:78px;font-size:11.5px;text-align:right;flex-shrink:0;color:var(--ink-2)}
+.fd-row .v b{color:var(--ink)}
+.fd-empty{text-align:center;color:var(--ink-3);font-size:12.5px;padding:10px 4px;line-height:1.6}
+</style>
+</head>
+<body>
+<!-- ==================== PIN ロック ==================== -->
+<div id="lock" style="position:fixed;inset:0;z-index:100;
+  background:radial-gradient(120% 90% at 50% 20%,#3a2c19 0%,#1a130a 70%,#080502 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;color:#E9DCBD;padding:20px">
+  <div style="font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:22px;
+    letter-spacing:.2em;color:#D4AF52;text-shadow:0 1px 2px rgba(0,0,0,.6);margin-bottom:6px">乗 務 実 績</div>
+  <div style="font-size:10px;letter-spacing:.3em;color:#8A6520;margin-bottom:34px">PRIVATE ACCESS</div>
+  <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+    maxlength="6" placeholder="●●●●●●"
+    style="width:220px;height:52px;font-size:26px;text-align:center;letter-spacing:.4em;
+      border:2px solid #B8893A;border-radius:6px;background:rgba(233,220,189,.08);
+      color:#E9DCBD;font-variant-numeric:tabular-nums;-webkit-appearance:none;outline:none">
+  <div id="pinmsg" style="height:20px;font-size:12px;color:#D06A56;margin-top:10px;letter-spacing:.05em"></div>
+  <button id="pinok" style="margin-top:6px;width:220px;height:44px;
+    border:1.5px solid #B8893A;border-radius:4px;background:#2A2012;color:#D4AF52;
+    font-size:14px;letter-spacing:.2em;font-family:inherit">開　く</button>
+  <div style="margin-top:34px;font-size:10px;color:#7A623A;letter-spacing:.1em;text-align:center;line-height:1.7">
+    このページはだいちゃん個人の営業記録です。<br>関係者以外の閲覧はご遠慮ください。
+  </div>
+</div>
+<script>
+/* ====== ここにPINを設定してください（6桁数字） ====== */
+const PIN = "REPLACE_ME_6_DIGITS";
+/* ================================================== */
+(function(){
+  const KEY='taxi-viewer-auth-v1';
+  const st=sessionStorage, lock=document.getElementById('lock'),
+        pin=document.getElementById('pin'), msg=document.getElementById('pinmsg'),
+        ok=document.getElementById('pinok');
+  if(st.getItem(KEY)==='1'){ lock.remove(); return; }
+  document.body.style.overflow='hidden';
+  setTimeout(()=>pin.focus(), 100);
+  function tryOpen(){
+    if(pin.value===PIN){
+      st.setItem(KEY,'1');
+      document.body.style.overflow='';
+      lock.style.transition='opacity .3s'; lock.style.opacity='0';
+      setTimeout(()=>lock.remove(), 320);
+    } else {
+      msg.textContent='PINが違います';
+      pin.value=''; pin.focus();
+      setTimeout(()=>msg.textContent='', 2000);
+    }
+  }
+  ok.onclick=tryOpen;
+  pin.addEventListener('keydown',e=>{if(e.key==='Enter')tryOpen();});
+  pin.addEventListener('input',()=>{
+    pin.value=pin.value.replace(/\D/g,'').slice(0,6);
+    if(pin.value.length===6) tryOpen();
+  });
+})();
+</script>
+<!-- ==================================================== -->
+<header>
+  <div class="htoggle">
+    <button id="tDark" title="ダークモード">◐</button>
+    <button id="tBig" title="文字サイズ">A<sup>+</sup></button>
+  </div>
+  <h1>乗 務 実 績</h1>
+  <div class="sub">DRIVING RECORD VIEWER</div>
+</header>
+
+<main>
+  <!-- ===== 月度ビュー ===== -->
+  <section id="v-month" class="view on">
+    <div class="gsel">
+      <button id="gPrev">‹</button>
+      <select id="gSel"></select>
+      <button id="gNext">›</button>
+      <div class="range" id="gRange"></div>
+    </div>
+    <div class="kpi" id="mKpi"></div>
+    <div class="frame" id="calFrame">
+      <h2 class="ttl">月度カレンダー</h2><div class="rule"></div>
+      <table class="cal" id="calT"></table>
+      <div class="callegend">
+        <span>売上(万)／時売・単価／回数・迎車</span>
+        <span class="grad">低<span class="gbar"></span>高</span>
+      </div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">過去同月度比較</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="cmpT"></table></div>
+      <div id="cmpNote"></div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">日別一覧</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="dayT"></table></div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">カテゴリ別×時間帯別 時間売上</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="catBandT"></table></div>
+      <div class="note">当月度実績。時間売上は乗車のあった時間帯の範囲から算出した推定値（円/h）。緋色は各カテゴリの最高帯。</div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">単価分布</h2><div class="rule"></div>
+      <div id="fareDist"></div>
+    </div>
+  </section>
+
+  <!-- ===== 年間ビュー ===== -->
+  <section id="v-year" class="view">
+    <div class="gsel">
+      <button id="yPrev">‹</button>
+      <select id="ySel"></select>
+      <button id="yNext">›</button>
+    </div>
+    <div class="kpi" id="yKpi"></div>
+    <div class="frame">
+      <h2 class="ttl">月度別売上</h2><div class="rule"></div>
+      <div id="yBars"></div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">月度別サマリー</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="yT"></table></div>
+    </div>
+  </section>
+
+  <!-- ===== カテゴリビュー ===== -->
+  <section id="v-cat" class="view">
+    <div class="fbar" id="cFilter">
+      <button data-m="3">直近3ヶ月度</button>
+      <button data-m="6" class="on">直近6ヶ月度</button>
+      <button data-m="12">直近12ヶ月度</button>
+      <button data-m="0">全期間</button>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">曜日カテゴリ別（1出番平均）</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="cT"></table></div>
+      <div id="cBars" style="margin-top:10px"></div>
+      <div class="note">出番数の少ないカテゴリは平均がぶれやすい点に注意。</div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-v="month" class="on">月度</button>
+  <button data-v="year">年間</button>
+  <button data-v="cat">カテゴリ</button>
+</nav>
+
+<div id="ovl"><div id="modal"></div></div>
+
+<script src="data.js"></script>
+<script>
+'use strict';
+const D = window.APP_DATA;
+const DAYS = D.days;
+const byDate = {}; DAYS.forEach(d => byDate[d.date] = d);
+const yen = v => v==null ? '–' : '¥' + Math.round(v).toLocaleString();
+const man = v => (v/10000).toFixed(1);
+const pct = v => v==null ? '–' : (v*100).toFixed(1) + '%';
+const kn = v => v==null ? '–' : Math.round(v).toLocaleString();
+const DOWJ = ['日','月','火','水','木','金','土'];
+const pd = s => new Date(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10));
+const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---- 祝日（振替・国民の休日・2019〜21特例対応） ---- */
+const EQUINOX={2019:[21,23],2020:[20,22],2021:[20,23],2022:[21,23],2023:[21,23],2024:[20,22],2025:[20,23],2026:[20,23],2027:[21,23],2028:[20,22],2029:[20,23],2030:[20,23]};
+const HOLCACHE={};
+function holidaySet(y){
+  if(HOLCACHE[y]) return HOLCACHE[y];
+  const H=new Set(); const add=(m,d)=>H.add(m*100+d);
+  const nthMon=(m,n)=>{const w=new Date(y,m-1,1).getDay();return 1+((8-w)%7)+7*(n-1);};
+  add(1,1); add(1,nthMon(1,2)); add(2,11);
+  if(y>=2020) add(2,23);
+  if(EQUINOX[y]) add(3,EQUINOX[y][0]);
+  add(4,29); add(5,3); add(5,4); add(5,5);
+  if(y===2020) add(7,23); else if(y===2021) add(7,22); else add(7,nthMon(7,3));
+  if(y===2020) add(8,10); else if(y===2021) add(8,8); else add(8,11);
+  add(9,nthMon(9,3));
+  if(EQUINOX[y]) add(9,EQUINOX[y][1]);
+  if(y===2020) add(7,24); else if(y===2021) add(7,23); else add(10,nthMon(10,2));
+  add(11,3); add(11,23);
+  if(y===2019) add(10,22);
+  const dow=(m,d)=>new Date(y,m-1,d).getDay();
+  const next=(m,d)=>{const t=new Date(y,m-1,d+1);return[t.getMonth()+1,t.getDate(),t.getFullYear()];};
+  for(const k of [...H]){
+    const m=Math.floor(k/100), d=k%100;
+    const [m2,d2,y2]=next(m,d); if(y2!==y) continue;
+    const [m3,d3,y3]=next(m2,d2); if(y3!==y) continue;
+    if(H.has(m3*100+d3)&&!H.has(m2*100+d2)&&dow(m2,d2)!==0) add(m2,d2);
+  }
+  for(const k of [...H]){
+    const m=Math.floor(k/100), d=k%100;
+    if(dow(m,d)!==0) continue;
+    let t=new Date(y,m-1,d+1);
+    while(H.has((t.getMonth()+1)*100+t.getDate())) t=new Date(y,t.getMonth(),t.getDate()+1);
+    if(t.getFullYear()===y) add((t.getMonth()+1)*100+t.getDate());
+  }
+  HOLCACHE[y]=H; return H;
+}
+const isHoliday = dt => holidaySet(dt.getFullYear()).has((dt.getMonth()+1)*100+dt.getDate());
+
+/* ---- 月度 ---- */
+const GEKIDOS = [...new Set(DAYS.map(d=>d.gekido))].sort();
+function gLabel(g){ return g.slice(0,4)+'年'+String(+g.slice(4))+'月度'; }
+function gRange(g){
+  const y=+g.slice(0,4), m=+g.slice(4);
+  const s = m===1 ? new Date(y-1,11,16) : new Date(y,m-2,16);
+  return [s, new Date(y,m-1,15)];
+}
+const fmtMD = d => (d.getMonth()+1)+'/'+d.getDate();
+const iso = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+function agg(list){
+  if(!list.length) return null;
+  const s = (k)=>list.reduce((a,d)=>a+(d[k]||0),0);
+  const sales=s('sales'), rides=s('rides'), pk=s('pickups'), wh=s('workH');
+  return {n:list.length, sales, rides, pk,
+    perShift: sales/list.length,
+    hourly: wh? sales/wh : null,
+    fare: rides? sales/rides : null,
+    pkRate: rides? pk/rides : null,
+    kaitei:[...new Set(list.map(d=>d.kaitei).filter(Boolean))]};
+}
+function kpiHTML(a){
+  if(!a) return '<div class="cell" style="grid-column:1/4"><div class="vl">データなし</div></div>';
+  return `
+  <div class="cell"><div class="lb">売上合計</div><div class="vl num">${man(a.sales)}<small>万</small></div></div>
+  <div class="cell"><div class="lb">出番数</div><div class="vl num">${a.n}<small>回</small></div></div>
+  <div class="cell"><div class="lb">1出番平均</div><div class="vl num">${man(a.perShift)}<small>万</small></div></div>
+  <div class="cell"><div class="lb">時間売上</div><div class="vl num">${kn(a.hourly)}<small>円/h</small></div></div>
+  <div class="cell"><div class="lb">平均単価</div><div class="vl num">${kn(a.fare)}<small>円</small></div></div>
+  <div class="cell"><div class="lb">迎車率</div><div class="vl num">${pct(a.pkRate)}</div></div>`;
+}
+
+let curG = GEKIDOS[GEKIDOS.length-1];
+const gSel = document.getElementById('gSel');
+gSel.innerHTML = GEKIDOS.map(g=>`<option value="${g}">${gLabel(g)}</option>`).join('');
+gSel.value = curG;
+gSel.onchange = ()=>{curG=gSel.value; renderMonth();};
+function moveG(step){
+  const i=GEKIDOS.indexOf(curG)+step;
+  if(i>=0 && i<GEKIDOS.length){curG=GEKIDOS[i];gSel.value=curG;renderMonth();}
+}
+document.getElementById('gPrev').onclick=()=>moveG(-1);
+document.getElementById('gNext').onclick=()=>moveG(1);
+
+/* スワイプで月度切替（月度ビュー全体） */
+(function(){
+  const el=document.getElementById('v-month');
+  let sx=0, sy=0, on=false;
+  el.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;on=true;},{passive:true});
+  el.addEventListener('touchend',e=>{
+    if(!on) return; on=false;
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>64 && Math.abs(dy)<48) moveG(dx>0?-1:1);
+  },{passive:true});
+})();
+
+function hex2rgb(h){h=h.trim().replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function heatStops(){
+  const cs=getComputedStyle(document.body);
+  return ['--heat0','--heat1','--heat2','--heat3'].map(v=>hex2rgb(cs.getPropertyValue(v)));
+}
+function heat(v, min, max){
+  if(v==null||max<=min) return null;
+  const t = Math.max(0, Math.min(1,(v-min)/(max-min)));
+  const stops=heatStops();
+  const x=t*(stops.length-1), i=Math.min(stops.length-2,Math.floor(x)), f=x-i;
+  const c=stops[i].map((a,k)=>Math.round(a+(stops[i+1][k]-a)*f));
+  const isDark=document.body.classList.contains('dark');
+  return {bg:`rgb(${c.join(',')})`, dark: isDark ? t>0.35 : t>0.55};
+}
+
+/* カテゴリ×6区分の推定時間売上 */
+const BLOCKS=[['出庫〜19時',0,6],['19〜22時',6,9],['22〜1時',9,12],['1〜4時',12,15],['4〜7時',15,18],['7時〜帰庫',18,24]];
+/* 各区分の稼働時間：出庫・帰庫があれば実時刻で精密計算、無ければ乗車範囲から推定 */
+function blockHours(d){
+  if(d.outH!=null && d.inH!=null && d.outH>=13 && d.inH>d.outH){
+    const so=d.outH-13, ko=d.inH-13;
+    return BLOCKS.map(([nm,s,e])=>{
+      const end = (e===24)? ko : Math.min(e, ko);
+      return Math.max(0, end - Math.max(s, so));
+    });
+  }
+  if(!d.bands) return BLOCKS.map(()=>0);
+  let f=-1,l=-1;
+  d.bands.forEach((b,i)=>{if(b[0]>0){if(f<0)f=i;l=i;}});
+  if(f<0) return BLOCKS.map(()=>0);
+  return BLOCKS.map(([nm,s,e])=>{
+    const hs=Math.max(s,f), he=Math.min(e-1,l);
+    return he>=hs? he-hs+1 : 0;
+  });
+}
+function catBandAgg(list){
+  const acc={};
+  list.forEach(d=>{
+    if(!d.bands) return;
+    const hrs=blockHours(d);
+    if(!hrs.some(x=>x>0)) return;
+    const c=acc[d.cat]=acc[d.cat]||BLOCKS.map(()=>({s:0,h:0}));
+    BLOCKS.forEach(([nm,s,e],bi)=>{
+      c[bi].h += hrs[bi];
+      for(let i=s;i<e;i++) c[bi].s += d.bands[i][2];
+    });
+  });
+  return acc;
+}
+
+function renderMonth(){
+  const list = DAYS.filter(d=>d.gekido===curG);
+  const a = agg(list);
+  const [rs,re] = gRange(curG);
+  document.getElementById('gRange').textContent = `${rs.getFullYear()}/${fmtMD(rs)} 〜 ${re.getFullYear()}/${fmtMD(re)}`;
+  document.getElementById('mKpi').innerHTML = kpiHTML(a);
+
+  // カレンダー
+  const vals=list.map(d=>d.sales||0);
+  const minS=vals.length?Math.min(...vals):0, maxS=vals.length?Math.max(...vals):0;
+  const start = new Date(rs); start.setDate(start.getDate()-start.getDay());
+  let html = '<tr>'+DOWJ.map((w,i)=>`<th class="${i===0?'sun':''}">${w}</th>`).join('')+'</tr>';
+  const cur = new Date(start);
+  while(cur <= re || cur.getDay() !== 0){
+    if(cur.getDay()===0) html+='<tr>';
+    const inR = cur>=rs && cur<=re;
+    const rec = inR ? byDate[iso(cur)] : null;
+    const hol = inR && isHoliday(cur);
+    let cls = inR ? '' : 'out', style='', body='';
+    if(hol) cls+=' holiday';
+    if(rec){
+      cls += ' hit';
+      const h = heat(rec.sales, minS, maxS);
+      if(h){ style=`background:${h.bg}`; if(h.dark) cls+=' dark'; }
+      body = `<div class="s num">${man(rec.sales)}<small>万</small></div>
+        <div class="sub num">${kn(rec.hourlySales)}/${kn(rec.avgFare)}</div>
+        <div class="r num">${rec.rides}回·迎${rec.pickups}</div>`;
+    }
+    html += `<td class="${cls}" style="${style}" ${rec?`data-d="${rec.date}"`:''}>
+      <div class="d"><span class="dn">${cur.getDate()}</span>${hol?'<span class="hol">祝</span>':''}</div>${body}</td>`;
+    if(cur.getDay()===6) html+='</tr>';
+    cur.setDate(cur.getDate()+1);
+    if(cur>re && cur.getDay()===0) break;
+  }
+  const calT=document.getElementById('calT');
+  calT.innerHTML = html;
+  calT.querySelectorAll('td.hit').forEach(td=>td.onclick=()=>openDay(td.dataset.d));
+
+  // 過去同月度比較
+  const mm = curG.slice(4);
+  const same = GEKIDOS.filter(g=>g.slice(4)===mm).sort().reverse();
+  let ch = '<tr><th>月度</th><th>売上計</th><th>出番</th><th>1出番</th><th>時売</th><th>単価</th><th>迎車率</th></tr>';
+  const kset = new Set();
+  same.forEach(g=>{
+    const ag = agg(DAYS.filter(d=>d.gekido===g));
+    if(!ag) return;
+    ag.kaitei.forEach(k=>kset.add(k));
+    const me = g===curG;
+    ch += `<tr${me?' style="background:var(--parch-d)"':''}>
+      <td>${me?'<b>':''}${g.slice(0,4)}年${me?'</b>':''}</td>
+      <td class="n num${me?' hi':''}">${man(ag.sales)}万</td>
+      <td class="n num">${ag.n}</td>
+      <td class="n num">${man(ag.perShift)}万</td>
+      <td class="n num">${kn(ag.hourly)}</td>
+      <td class="n num">${kn(ag.fare)}</td>
+      <td class="n num">${pct(ag.pkRate)}</td></tr>`;
+  });
+  document.getElementById('cmpT').innerHTML = ch;
+  document.getElementById('cmpNote').innerHTML =
+    kset.size>1 ? `<div class="warn">⚠️ 運賃改定をまたぐ比較です（${[...kset].map(esc).join(' / ')}）。単価・売上の差には改定の影響が含まれます。</div>` : '';
+
+  // 日別一覧
+  let dh = '<tr><th>日付</th><th>カテゴリ</th><th>売上</th><th>回</th><th>迎</th><th>時売</th><th>単価</th></tr>';
+  list.forEach(d=>{
+    const dt = pd(d.date);
+    const hol = isHoliday(dt);
+    dh += `<tr class="tap" data-d="${d.date}">
+      <td class="${(d.dow==='日'||hol)?'sun-t':''}">${fmtMD(dt)}(${esc(d.dow)})${hol?'祝':''}</td>
+      <td class="cat-b">${esc(d.cat)}</td>
+      <td class="n num">${yen(d.sales)}</td>
+      <td class="n num">${d.rides}</td>
+      <td class="n num">${d.pickups}</td>
+      <td class="n num">${kn(d.hourlySales)}</td>
+      <td class="n num">${kn(d.avgFare)}</td></tr>`;
+  });
+  if(a) dh += `<tr class="total"><td>計 ${a.n}出番</td><td></td><td class="n num hi">${yen(a.sales)}</td>
+    <td class="n num">${a.rides}</td><td class="n num">${a.pk}</td>
+    <td class="n num">${kn(a.hourly)}</td>
+    <td class="n num">${kn(a.fare)}</td></tr>`;
+  const dayT=document.getElementById('dayT');
+  dayT.innerHTML = dh;
+  dayT.querySelectorAll('tr.tap').forEach(tr=>tr.onclick=()=>openDay(tr.dataset.d));
+
+  // カテゴリ別×時間帯別 時間売上（当月度）
+  const cb = catBandAgg(list);
+  const order=['平日→平日','平日→休日','休日→休日','休日→平日'];
+  const cats=Object.keys(cb).sort((x,y)=>{
+    const ix=order.indexOf(x),iy=order.indexOf(y);
+    return (ix<0?99:ix)-(iy<0?99:iy);
+  });
+  if(cats.length){
+    let h='<tr><th>時間帯</th>'+cats.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
+    const best={};
+    cats.forEach(c=>{
+      let b=-1,bi=-1;
+      cb[c].forEach((x,i)=>{const v=x.h?x.s/x.h:-1; if(v>b){b=v;bi=i;}});
+      best[c]=bi;
+    });
+    BLOCKS.forEach(([nm],bi)=>{
+      h+=`<tr><td>${nm}</td>`+cats.map(c=>{
+        const x=cb[c][bi], v=x.h? x.s/x.h : null;
+        return `<td class="n num${best[c]===bi?' hi':''}">${v==null?'–':kn(v)}</td>`;
+      }).join('')+'</tr>';
+    });
+    document.getElementById('catBandT').innerHTML=h;
+  } else {
+    document.getElementById('catBandT').innerHTML='<tr><td>この月度の時間帯別データはありません</td></tr>';
+  }
+
+  // 単価分布
+  renderFareDist(list);
+}
+
+const FARE = window.APP_DATA.fareLabels || [];
+function renderFareDist(list){
+  const el=document.getElementById('fareDist');
+  const withFd=list.filter(d=>d.fareDist);
+  if(!withFd.length){
+    el.innerHTML='<div class="fd-empty">この月度は乗車明細（単価分布）データがありません。<br>単価分布は個別入力のある月度でのみ表示されます。</div>';
+    return;
+  }
+  const tot=FARE.map((_,i)=>withFd.reduce((a,d)=>a+(d.fareDist[i]||0),0));
+  const sum=tot.reduce((a,b)=>a+b,0);
+  const mx=Math.max(1,...tot);
+  // 低単価=金→高単価=緋のグラデーション
+  const col=i=>{
+    const t=FARE.length>1? i/(FARE.length-1):0;
+    const s=heatStops(); const x=t*(s.length-1),j=Math.min(s.length-2,Math.floor(x)),f=x-j;
+    const c=s[j].map((a,k)=>Math.round(a+(s[j+1][k]-a)*f));
+    return `rgb(${c.join(',')})`;
+  };
+  let h='';
+  FARE.forEach((lb,i)=>{
+    const cnt=tot[i], p=sum?cnt/sum*100:0;
+    h+=`<div class="fd-row">
+      <div class="lb">${lb}</div>
+      <div class="track"><div class="fill" style="width:${cnt/mx*100}%;background:${col(i)}"></div></div>
+      <div class="v"><b>${cnt}</b>件 ${p.toFixed(0)}%</div></div>`;
+  });
+  const days=withFd.length;
+  h=`<div class="note" style="margin:0 0 8px">明細のある${days}出番分の合計（全${sum}回）。当月度の総出番と一致しない場合は明細未入力日があります。</div>`+h;
+  el.innerHTML=h;
+}
+
+/* ---- 日別詳細 ---- */
+function openDay(key){
+  const d = byDate[key]; if(!d) return;
+  const dt = pd(d.date);
+  const hol = isHoliday(dt);
+  let h = `<div class="grip"></div>
+    <h3>${dt.getFullYear()}/${fmtMD(dt)}（${esc(d.dow)}${hol?'・祝':''}）</h3>
+    <div class="cat-line">${esc(d.cat)}　${esc(d.kaitei)}</div>
+    <div class="kpi">
+      <div class="cell"><div class="lb">売上</div><div class="vl num">${man(d.sales)}<small>万</small></div></div>
+      <div class="cell"><div class="lb">回数</div><div class="vl num">${d.rides}<small>回</small></div></div>
+      <div class="cell"><div class="lb">迎車</div><div class="vl num">${d.pickups}<small>回</small></div></div>
+      <div class="cell"><div class="lb">時間売上</div><div class="vl num">${kn(d.hourlySales)}</div></div>
+      <div class="cell"><div class="lb">平均単価</div><div class="vl num">${kn(d.avgFare)}</div></div>
+      <div class="cell"><div class="lb">稼働時間</div><div class="vl num">${d.workH?d.workH.toFixed(1):'–'}<small>h</small></div></div>
+    </div>
+    <table class="list" style="margin-top:2px">
+      <tr><th>内訳</th><th>売上</th><th>回数</th><th>単価</th></tr>
+      <tr><td>流し</td><td class="n num">${yen(d.cruiseSales)}</td><td class="n num">${d.rides-d.pickups}</td><td class="n num">${kn(d.cruiseFare)}</td></tr>
+      <tr><td>迎車</td><td class="n num">${yen(d.pickupSales)}</td><td class="n num">${d.pickups}</td><td class="n num">${kn(d.pickupFare)}</td></tr>
+    </table>`;
+  if(d.rides5k && d.rides5k.length){
+    const mxF=Math.max(...d.rides5k.map(r=>r.fare));
+    h += `<h3 style="margin-top:14px;font-size:14px">¥5,000以上の乗車（${d.rides5k.length}件）</h3>
+      <table class="list" style="margin-top:6px">
+      <tr><th>時刻</th><th>乗車地 → 降車地</th><th>金額</th></tr>`;
+    d.rides5k.forEach(r=>{
+      h+=`<tr><td class="num" style="vertical-align:top">${esc(r.t)}${r.pk?'<span class="cat-b"> 迎</span>':''}</td>
+        <td style="white-space:normal;line-height:1.45">${esc(r.from)} → ${esc(r.to)}${r.note?`<div class="cat-b">${esc(r.note)}</div>`:''}</td>
+        <td class="n num${r.fare===mxF?' hi':''}" style="vertical-align:top">${yen(r.fare)}</td></tr>`;
+    });
+    h += '</table>';
+  }
+  if(d.bands){
+    const hrs=blockHours(d);
+    const precise = d.outH!=null && d.inH!=null && d.outH>=13 && d.inH>d.outH;
+    const bl = BLOCKS.map(([nm,s,e],bi)=>{
+      const seg=d.bands.slice(s,e);
+      const r=seg.reduce((a,x)=>a+x[0],0), p=seg.reduce((a,x)=>a+x[1],0), sl=seg.reduce((a,x)=>a+x[2],0);
+      return {nm,r,p,sl,hourly:hrs[bi]>0?sl/hrs[bi]:null};
+    }).filter(b=>b.r>0);
+    const bestS = Math.max(...bl.map(b=>b.sl));
+    const bestH = Math.max(...bl.map(b=>b.hourly||0));
+    h += `<h3 style="margin-top:14px;font-size:14px">時間帯別</h3>
+      <table class="list" style="margin-top:6px">
+      <tr><th>時間帯</th><th>売上</th><th>回</th><th>迎</th><th>時売</th></tr>`;
+    bl.forEach(b=>{
+      h+=`<tr><td>${b.nm}</td><td class="n num${b.sl===bestS?' hi':''}">${yen(b.sl)}</td>
+        <td class="n num">${b.r}</td><td class="n num">${b.p}</td>
+        <td class="n num${b.hourly===bestH?' hi':''}">${kn(b.hourly)}</td></tr>`;
+    });
+    h += `</table><div class="note" style="margin-top:4px">時売＝各区分の売上÷区分内の稼働時間${precise?'（出庫・帰庫時刻から算出）':'（乗車のあった時間帯の範囲からの推定）'}。</div>`;
+    const mx = Math.max(1,...d.bands.map(x=>x[2]));
+    let gl='';
+    for(let v=2000; v<mx; v+=2000){
+      const lb = v%6000===0 ? `<span>${v>=10000?'¥'+(v/10000)+'万':'¥'+v/1000+'千'}</span>` : '';
+      gl+=`<div class="gridline" style="bottom:${v/mx*100}%">${lb}</div>`;
+    }
+    h += `<div class="bandbar">`+gl+d.bands.map(x=>
+      `<div class="b${x[2]===mx&&x[2]>0?' top':''}" style="height:${Math.max(1,x[2]/mx*100)}%"></div>`).join('')+`</div>
+      <div class="bandlbl"><span>13</span><span></span><span></span><span>16</span><span></span><span></span><span>19</span><span></span><span></span><span>22</span><span></span><span></span><span>1</span><span></span><span></span><span>4</span><span></span><span></span><span>7</span><span></span><span></span><span>10</span><span></span><span></span></div>
+      <div class="note">1時間刻みの売上分布（13時起点・翌13時まで）。緋色が最高帯。破線は¥2,000刻み（ラベルは¥6,000毎）。</div>`;
+  } else {
+    h += `<div class="note">この日の時間帯別データはありません。</div>`;
+  }
+  h += `<button class="closebtn" id="mclose">閉じる</button>`;
+  document.getElementById('modal').innerHTML=h;
+  document.getElementById('ovl').classList.add('show');
+  document.getElementById('mclose').onclick=closeModal;
+}
+function closeModal(){document.getElementById('ovl').classList.remove('show');}
+document.getElementById('ovl').addEventListener('click',e=>{if(e.target.id==='ovl')closeModal();});
+
+/* ---- 年間 ---- */
+const YEARS=[...new Set(GEKIDOS.map(g=>g.slice(0,4)))].sort();
+let curY = YEARS[YEARS.length-1];
+const ySel=document.getElementById('ySel');
+ySel.innerHTML=YEARS.map(y=>`<option value="${y}">${y}年（月度）</option>`).join('');
+ySel.value=curY;
+ySel.onchange=()=>{curY=ySel.value;renderYear();};
+document.getElementById('yPrev').onclick=()=>{const i=YEARS.indexOf(curY);if(i>0){curY=YEARS[i-1];ySel.value=curY;renderYear();}};
+document.getElementById('yNext').onclick=()=>{const i=YEARS.indexOf(curY);if(i<YEARS.length-1){curY=YEARS[i+1];ySel.value=curY;renderYear();}};
+
+function renderYear(){
+  const gs = GEKIDOS.filter(g=>g.slice(0,4)===curY);
+  const all = DAYS.filter(d=>d.gekido.slice(0,4)===curY);
+  document.getElementById('yKpi').innerHTML = kpiHTML(agg(all));
+  const rows = gs.map(g=>({g, a:agg(DAYS.filter(d=>d.gekido===g))})).filter(r=>r.a);
+  const mx = Math.max(1,...rows.map(r=>r.a.sales));
+  document.getElementById('yBars').innerHTML = rows.map(r=>`
+    <div class="bar-row">
+      <div class="m">${+r.g.slice(4)}月度</div>
+      <div class="track"><div class="fill${r.a.sales===mx?' best':''}" style="width:${r.a.sales/mx*100}%"></div></div>
+      <div class="v num">${man(r.a.sales)}万</div>
+    </div>`).join('');
+  let h='<tr><th>月度</th><th>売上計</th><th>出番</th><th>1出番</th><th>時売</th><th>単価</th><th>迎車率</th></tr>';
+  rows.forEach(r=>{
+    h+=`<tr class="tap" data-g="${r.g}"><td>${+r.g.slice(4)}月度</td>
+      <td class="n num">${man(r.a.sales)}万</td><td class="n num">${r.a.n}</td>
+      <td class="n num">${man(r.a.perShift)}万</td>
+      <td class="n num">${kn(r.a.hourly)}</td>
+      <td class="n num">${kn(r.a.fare)}</td>
+      <td class="n num">${pct(r.a.pkRate)}</td></tr>`;
+  });
+  const at=agg(all);
+  if(at) h+=`<tr class="total"><td>年計</td><td class="n num hi">${man(at.sales)}万</td>
+    <td class="n num">${at.n}</td><td class="n num">${man(at.perShift)}万</td>
+    <td class="n num">${kn(at.hourly)}</td>
+    <td class="n num">${kn(at.fare)}</td>
+    <td class="n num">${pct(at.pkRate)}</td></tr>`;
+  const yT=document.getElementById('yT');
+  yT.innerHTML=h;
+  yT.querySelectorAll('tr.tap').forEach(tr=>tr.onclick=()=>{
+    curG=tr.dataset.g; gSel.value=curG; renderMonth(); switchView('month');
+  });
+}
+
+/* ---- カテゴリ ---- */
+let catM = 6;
+document.querySelectorAll('#cFilter button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#cFilter button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); catM=+b.dataset.m; renderCat();
+});
+function renderCat(){
+  let list = DAYS;
+  if(catM>0){
+    const gs = new Set(GEKIDOS.slice(-catM));
+    list = DAYS.filter(d=>gs.has(d.gekido));
+  }
+  const cats={};
+  list.forEach(d=>{(cats[d.cat]=cats[d.cat]||[]).push(d);});
+  const order=['平日→平日','平日→休日','休日→休日','休日→平日'];
+  const keys=Object.keys(cats).sort((a,b)=>{
+    const ia=order.indexOf(a),ib=order.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  const rows=keys.map(k=>({k,a:agg(cats[k])}));
+  let h='<tr><th>カテゴリ</th><th>出番</th><th>平均売上</th><th>時売</th><th>単価</th><th>迎車率</th></tr>';
+  const best=Math.max(...rows.map(r=>r.a.perShift));
+  rows.forEach(r=>{
+    h+=`<tr><td>${esc(r.k)}</td><td class="n num">${r.a.n}</td>
+      <td class="n num${r.a.perShift===best?' hi':''}">${yen(r.a.perShift)}</td>
+      <td class="n num">${kn(r.a.hourly)}</td>
+      <td class="n num">${kn(r.a.fare)}</td>
+      <td class="n num">${pct(r.a.pkRate)}</td></tr>`;
+  });
+  document.getElementById('cT').innerHTML=h;
+  const mx=Math.max(1,...rows.map(r=>r.a.perShift));
+  document.getElementById('cBars').innerHTML=rows.map(r=>`
+    <div class="bar-row">
+      <div class="m" style="width:76px;font-size:10px">${esc(r.k)}</div>
+      <div class="track"><div class="fill${r.a.perShift===mx?' best':''}" style="width:${r.a.perShift/mx*100}%"></div></div>
+      <div class="v num">${man(r.a.perShift)}万</div>
+    </div>`).join('');
+}
+
+/* ---- タブ ---- */
+function switchView(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.v));
+
+/* ---- 表示トグル（ヒート色が変わるので月度を再描画） ---- */
+const tDark=document.getElementById('tDark'), tBig=document.getElementById('tBig');
+tDark.onclick=()=>{
+  const on=document.body.classList.toggle('dark');
+  tDark.classList.toggle('on',on);
+  document.querySelector('meta[name=theme-color]').setAttribute('content', on?'#15100A':'#2A2012');
+  renderMonth();
+};
+tBig.onclick=()=>{ tBig.classList.toggle('on', document.body.classList.toggle('big')); };
+/* 端末のダーク設定を初期反映 */
+if(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches){ tDark.click(); }
+
+renderMonth(); renderYear(); renderCat();
+
+/* ---- PWA: Service Worker 登録 ---- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
