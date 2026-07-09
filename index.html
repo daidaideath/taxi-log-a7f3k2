@@ -1,142 +1,3 @@
-
-Claudeが応答を完了しました
-Q: PIN入力後、具体的に何が起きていますか？
-A: 「PINが違います」と赤字が出る
-
-Q: PIN入力は何回試しましたか？
-A: 2回以上（入力し直しても同じ）
-
-基準日：2026/07/10
-
-なるほど、PIN不一致で赤字が出るということは、Safariが読んでいるindex.htmlはPIN設定済みの新しいバージョンです（古いままなら「PIN画面自体が出ない」ので）。キャッシュ削除は効いています。
-
-ということは、入力しているPINと、index.htmlに書いたPINが一致していないのが原因です。
-
-ChromeとSafariで違う入力をしている、あるいは、書き込んだPINが自分の思っているのと違う可能性が高いです。
-
-切り分けの質問
-Q: iPhone Chromeでは今も同じPINで開けますか？
-A: 同じPINでChromeは開けた
-
-Q: index.htmlに書いたPINとSafariに入力しているPINは、本当に完全に同じですか？
-A: 入れている
-
-基準日：2026/07/10
-
-Chromeでは同じPINで開けている、これは重要な情報です。ということはPINは正しいので、Safari特有の別の問題が起きています。
-
-一番怪しいのは「iOSの自動大文字変換」
-iOS Safariでは、入力欄によっては最初の文字が勝手に大文字化される、あるいは数字を全角に変換して入力されることがあります。PINは数字なのに、Safariが半角/全角の判定でおかしくなっている可能性です。
-
-PIN入力欄をタップしたとき、キーボードは数字キーボード（テンキー）が出ていますか？ それとも普通のキーボード？
-
-もし普通のキーボードが出ているなら、それが原因です。私が作った入力欄は数字キーボードを出す指定をしているのですが、iOS Safariで効いていない可能性があります。
-
-対処：数字キーボードを強制する
-index.htmlのPIN入力欄の設定を、iOS Safariで確実に数字キーボードが出るように修正します。以下の変更を加えます。
-
-
-IOS Safariで数字キーボードを確実に出すためにtype=telを併用
-IOS Safariで数字キーボードを確実に出すためにtype=telを併用
-正直に言うと、これで直る保証はまだ100%ではありません。もう一段、入力値を検証時に半角数字だけに正規化する処理も入れておきます。
-
-
-2個のファイルを編集しました, 2個のコマンドを実行しました, ファイルを読み取りました
-2個のファイルを編集しました, 2個のコマンドを実行しました, ファイルを読み取りました
-基準日：2026/07/10
-
-修正版index.htmlを出しました。iOS Safari対策を3つ入れています。
-
-修正の中身：
-
-inputのtypeを password から tel に変更（iOS Safariで確実に数字テンキーが出る）
-自動大文字化・自動修正・スペルチェックを全てオフ
-入力値を比較する前に全角数字を半角に変換、それ以外の文字を除去
-Safariが全角数字を紛れ込ませていた場合、これで解決するはずです。
-
-手順
-ダウンロードしたindex.htmlを、taxi-viewerフォルダの既存index.htmlに上書き
-その際、PINを再度設定してください（REPLACE_ME_6_DIGITS を6桁数字に）
-taxi-viewer\index.htmlで動作確認（ローカルで開いて、PINで通るか）
-GitHubに index.html を「Add file → Upload files」で上書きアップロード → Commit
-1〜2分待って、iPhone Safariでもう一度サイトデータを削除（前と同じ手順、設定→アプリ→Safari→詳細→Webサイトデータ→github検索→スワイプ削除）
-Safariで再度URLを開いてPIN入力
-PIN入力欄をタップしたとき、iPhoneの下から出てくるキーボードが数字テンキーになっているかを確認してください。もし今度も普通のキーボードが出るようなら、他の原因があるので教えてください。
-
-正直に言うと、私はiPhone実機で検証できないので、これで直る保証は100%ではありません。もし今回もダメだったら、次はもう一段別のアプローチ（PIN入力を数字パッドUI化など）を試します。まずこれで試してみてください。
-
-
-Index
-コード · HTML 
-chromeから自動パスワードで代理入力させてもダメです
-
-基準日：2026/07/10
-
-正直に言います。「Chromeで自動パスワード入力してもダメ」ということは、私の想定していた原因（キーボード・全角）ではなく、もっと根本的な問題の可能性が高いです。少し落ち着いて切り分けさせてください。
-
-一番怪しくなってきた仮説
-GitHubに上がっているindex.htmlのPINが、だいちゃんが今書き換えたPINと違う可能性です。
-
-さっき差し替えたindex.htmlは古いバージョンのPIN、あるいは REPLACE_ME_6_DIGITS のまま、あるいは書き換えが保存されていなかった、といった状態かもしれません。iPhone SafariとPC Chromeで挙動が違うことから、片方は「新しいindex.html」を、片方は「古いindex.html」を掴んでいる可能性もあります。
-
-診断のためのお願い
-これ以上暗中模索を続けるより、今のindex.htmlの状態を確認するのが確実です。次の情報を教えてください。
-
-GitHub上のindex.htmlの中身確認
-
-ブラウザでGitHubのリポジトリを開く
-index.html をクリック
-開いたコード表示で、右上のあたりに Raw というボタンがあるのでクリック
-生のコードが出るので、Ctrl+F で const PIN を検索
-検索でヒットした行がどんな見た目か教えてください（PINそのものは書かず、何桁の数字が入っているか、REPLACE_MEのままか、それとも何かおかしな文字列かだけ）
-例えば「6桁の数字が入っている」「まだREPLACE_ME_6_DIGITSのまま」「4桁しか入っていない」「なぜかクォート付きで空欄」など、状態だけ教えてください。
-
-これで原因が特定できます。急がず1つずつ確認しましょう。
-
-ＯＫこれはいったんおいておいて、サイトの修正をお願いしたいです。日別のページ表示において左右左右スワイプで前の日次の日に移動できるようにしたい。あと上スワイプで月画面に戻れるようになると嬉しいです。多分使用量上限が来るので途中で止まるとおもいます。また明後日相談しますね
-
-基準日：2026/07/10
-
-了解、日別モーダルにスワイプ操作を追加します（左右で前日/翌日、下スワイプで閉じる）。
-
-
-2個のコマンドを実行しました, ファイルを表示しました, ファイルを編集しました
-2個のコマンドを実行しました, ファイルを表示しました, ファイルを編集しました
-基準日：2026/07/10
-
-修正版index.htmlを出しました。
-
-追加した操作：
-
-日別モーダルを左スワイプ→翌日、右スワイプ→前日（データのある日にジャンプ、月度をまたぐ場合は月度カレンダー側も自動で切り替わります）
-下スワイプ→モーダルを閉じる（月度カレンダーに戻る）
-上スワイプでなく下スワイプにしたのは、iOSのモーダルを閉じるジェスチャの慣習に合わせるためです。もし上のほうが良ければ変更できます。
-
-誤発火防止として、モーダル内を縦スクロール中は反応しないようにしてあります。
-
-次回の作業予定（引き継ぎメモ）
-PIN問題の切り分け：GitHub上のindex.htmlを開いてRaw表示→Ctrl+Fでconst PIN検索→どんな見た目か教えてください（PINそのものは書かず、状態だけ）
-今回のスワイプ機能反映：修正版index.htmlをGitHubに上書きアップロード
-**前回のiOS Safari対策（type=tel、全角対応）**も入っているので、PIN問題が直る可能性もあります
-使用量が来る前にお伝えしておくと、今回のスワイプ機能はローカル（PC）では動作確認できませんが、構文チェックは通っています。実機で試してみて、感度や誤発火があれば明後日以降に調整します。
-
-おつかれさまでした。また明後日以降ゆっくり続けましょう。
-
-
-Index
-コード · HTML 
-
-セッション制限の90%を使用しました
-利用分を追加購入
-
-
-
-
-
-Claude は AI のため、誤りを含む可能性があります。回答内容は必ずご確認ください。
-
-
-Index · HTML
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -334,7 +195,7 @@ body.dark .gridline span{background:var(--parch-l)}
 </div>
 <script>
 /* ====== ここにPINを設定してください（6桁数字） ====== */
-const PIN = "511663";
+const PIN = "511666";
 /* ================================================== */
 (function(){
   const KEY='taxi-viewer-auth-v1';
@@ -375,7 +236,7 @@ const PIN = "511663";
   <h1>乗 務 実 績</h1>
   <div class="sub">DRIVING RECORD VIEWER</div>
 </header>
- 
+
 <main>
   <!-- ===== 月度ビュー ===== -->
   <section id="v-month" class="view on">
@@ -413,7 +274,7 @@ const PIN = "511663";
       <div id="fareDist"></div>
     </div>
   </section>
- 
+
   <!-- ===== 年間ビュー ===== -->
   <section id="v-year" class="view">
     <div class="gsel">
@@ -431,7 +292,7 @@ const PIN = "511663";
       <div class="scr"><table class="list" id="yT"></table></div>
     </div>
   </section>
- 
+
   <!-- ===== カテゴリビュー ===== -->
   <section id="v-cat" class="view">
     <div class="fbar" id="cFilter">
@@ -448,15 +309,15 @@ const PIN = "511663";
     </div>
   </section>
 </main>
- 
+
 <nav>
   <button data-v="month" class="on">月度</button>
   <button data-v="year">年間</button>
   <button data-v="cat">カテゴリ</button>
 </nav>
- 
+
 <div id="ovl"><div id="modal"></div></div>
- 
+
 <script src="data.js"></script>
 <script>
 'use strict';
@@ -470,7 +331,7 @@ const kn = v => v==null ? '–' : Math.round(v).toLocaleString();
 const DOWJ = ['日','月','火','水','木','金','土'];
 const pd = s => new Date(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10));
 const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
- 
+
 /* ---- 祝日（振替・国民の休日・2019〜21特例対応） ---- */
 const EQUINOX={2019:[21,23],2020:[20,22],2021:[20,23],2022:[21,23],2023:[21,23],2024:[20,22],2025:[20,23],2026:[20,23],2027:[21,23],2028:[20,22],2029:[20,23],2030:[20,23]};
 const HOLCACHE={};
@@ -507,7 +368,7 @@ function holidaySet(y){
   HOLCACHE[y]=H; return H;
 }
 const isHoliday = dt => holidaySet(dt.getFullYear()).has((dt.getMonth()+1)*100+dt.getDate());
- 
+
 /* ---- 月度 ---- */
 const GEKIDOS = [...new Set(DAYS.map(d=>d.gekido))].sort();
 function gLabel(g){ return g.slice(0,4)+'年'+String(+g.slice(4))+'月度'; }
@@ -518,7 +379,7 @@ function gRange(g){
 }
 const fmtMD = d => (d.getMonth()+1)+'/'+d.getDate();
 const iso = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
- 
+
 function agg(list){
   if(!list.length) return null;
   const s = (k)=>list.reduce((a,d)=>a+(d[k]||0),0);
@@ -540,7 +401,7 @@ function kpiHTML(a){
   <div class="cell"><div class="lb">平均単価</div><div class="vl num">${kn(a.fare)}<small>円</small></div></div>
   <div class="cell"><div class="lb">迎車率</div><div class="vl num">${pct(a.pkRate)}</div></div>`;
 }
- 
+
 let curG = GEKIDOS[GEKIDOS.length-1];
 const gSel = document.getElementById('gSel');
 gSel.innerHTML = GEKIDOS.map(g=>`<option value="${g}">${gLabel(g)}</option>`).join('');
@@ -552,7 +413,7 @@ function moveG(step){
 }
 document.getElementById('gPrev').onclick=()=>moveG(-1);
 document.getElementById('gNext').onclick=()=>moveG(1);
- 
+
 /* スワイプで月度切替（月度ビュー全体） */
 (function(){
   const el=document.getElementById('v-month');
@@ -564,7 +425,7 @@ document.getElementById('gNext').onclick=()=>moveG(1);
     if(Math.abs(dx)>64 && Math.abs(dy)<48) moveG(dx>0?-1:1);
   },{passive:true});
 })();
- 
+
 function hex2rgb(h){h=h.trim().replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 function heatStops(){
   const cs=getComputedStyle(document.body);
@@ -579,7 +440,7 @@ function heat(v, min, max){
   const isDark=document.body.classList.contains('dark');
   return {bg:`rgb(${c.join(',')})`, dark: isDark ? t>0.35 : t>0.55};
 }
- 
+
 /* カテゴリ×6区分の推定時間売上 */
 const BLOCKS=[['出庫〜19時',0,6],['19〜22時',6,9],['22〜1時',9,12],['1〜4時',12,15],['4〜7時',15,18],['7時〜帰庫',18,24]];
 /* 各区分の稼働時間：出庫・帰庫があれば実時刻で精密計算、無ければ乗車範囲から推定 */
@@ -614,14 +475,14 @@ function catBandAgg(list){
   });
   return acc;
 }
- 
+
 function renderMonth(){
   const list = DAYS.filter(d=>d.gekido===curG);
   const a = agg(list);
   const [rs,re] = gRange(curG);
   document.getElementById('gRange').textContent = `${rs.getFullYear()}/${fmtMD(rs)} 〜 ${re.getFullYear()}/${fmtMD(re)}`;
   document.getElementById('mKpi').innerHTML = kpiHTML(a);
- 
+
   // カレンダー
   const vals=list.map(d=>d.sales||0);
   const minS=vals.length?Math.min(...vals):0, maxS=vals.length?Math.max(...vals):0;
@@ -652,7 +513,7 @@ function renderMonth(){
   const calT=document.getElementById('calT');
   calT.innerHTML = html;
   calT.querySelectorAll('td.hit').forEach(td=>td.onclick=()=>openDay(td.dataset.d));
- 
+
   // 過去同月度比較
   const mm = curG.slice(4);
   const same = GEKIDOS.filter(g=>g.slice(4)===mm).sort().reverse();
@@ -675,7 +536,7 @@ function renderMonth(){
   document.getElementById('cmpT').innerHTML = ch;
   document.getElementById('cmpNote').innerHTML =
     kset.size>1 ? `<div class="warn">⚠️ 運賃改定をまたぐ比較です（${[...kset].map(esc).join(' / ')}）。単価・売上の差には改定の影響が含まれます。</div>` : '';
- 
+
   // 日別一覧
   let dh = '<tr><th>日付</th><th>カテゴリ</th><th>売上</th><th>回</th><th>迎</th><th>時売</th><th>単価</th></tr>';
   list.forEach(d=>{
@@ -697,7 +558,7 @@ function renderMonth(){
   const dayT=document.getElementById('dayT');
   dayT.innerHTML = dh;
   dayT.querySelectorAll('tr.tap').forEach(tr=>tr.onclick=()=>openDay(tr.dataset.d));
- 
+
   // カテゴリ別×時間帯別 時間売上（当月度）
   const cb = catBandAgg(list);
   const order=['平日→平日','平日→休日','休日→休日','休日→平日'];
@@ -723,11 +584,11 @@ function renderMonth(){
   } else {
     document.getElementById('catBandT').innerHTML='<tr><td>この月度の時間帯別データはありません</td></tr>';
   }
- 
+
   // 単価分布
   renderFareDist(list);
 }
- 
+
 const FARE = window.APP_DATA.fareLabels || [];
 function renderFareDist(list){
   const el=document.getElementById('fareDist');
@@ -758,7 +619,7 @@ function renderFareDist(list){
   h=`<div class="note" style="margin:0 0 8px">明細のある${days}出番分の合計（全${sum}回）。当月度の総出番と一致しない場合は明細未入力日があります。</div>`+h;
   el.innerHTML=h;
 }
- 
+
 /* ---- 日別詳細 ---- */
 function openDay(key){
   const d = byDate[key]; if(!d) return;
@@ -831,7 +692,7 @@ function openDay(key){
 }
 function closeModal(){document.getElementById('ovl').classList.remove('show');}
 document.getElementById('ovl').addEventListener('click',e=>{if(e.target.id==='ovl')closeModal();});
- 
+
 /* ---- 日別モーダルのスワイプ操作 ---- */
 /* 左右: 前日/翌日（データのある日にジャンプ、月度をまたぐと月度表示も更新）
    下:   モーダルを閉じる
@@ -865,7 +726,7 @@ document.getElementById('ovl').addEventListener('click',e=>{if(e.target.id==='ov
     }
   },{passive:true});
 })();
- 
+
 /* ---- 年間 ---- */
 const YEARS=[...new Set(GEKIDOS.map(g=>g.slice(0,4)))].sort();
 let curY = YEARS[YEARS.length-1];
@@ -875,7 +736,7 @@ ySel.value=curY;
 ySel.onchange=()=>{curY=ySel.value;renderYear();};
 document.getElementById('yPrev').onclick=()=>{const i=YEARS.indexOf(curY);if(i>0){curY=YEARS[i-1];ySel.value=curY;renderYear();}};
 document.getElementById('yNext').onclick=()=>{const i=YEARS.indexOf(curY);if(i<YEARS.length-1){curY=YEARS[i+1];ySel.value=curY;renderYear();}};
- 
+
 function renderYear(){
   const gs = GEKIDOS.filter(g=>g.slice(0,4)===curY);
   const all = DAYS.filter(d=>d.gekido.slice(0,4)===curY);
@@ -909,7 +770,7 @@ function renderYear(){
     curG=tr.dataset.g; gSel.value=curG; renderMonth(); switchView('month');
   });
 }
- 
+
 /* ---- カテゴリ ---- */
 let catM = 6;
 document.querySelectorAll('#cFilter button').forEach(b=>b.onclick=()=>{
@@ -948,7 +809,7 @@ function renderCat(){
       <div class="v num">${man(r.a.perShift)}万</div>
     </div>`).join('');
 }
- 
+
 /* ---- タブ ---- */
 function switchView(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
@@ -957,7 +818,7 @@ function switchView(v){
   window.scrollTo(0,0);
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.v));
- 
+
 /* ---- 表示トグル（ヒート色が変わるので月度を再描画） ---- */
 const tDark=document.getElementById('tDark'), tBig=document.getElementById('tBig');
 tDark.onclick=()=>{
@@ -969,9 +830,9 @@ tDark.onclick=()=>{
 tBig.onclick=()=>{ tBig.classList.toggle('on', document.body.classList.toggle('big')); };
 /* 端末のダーク設定を初期反映 */
 if(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches){ tDark.click(); }
- 
+
 renderMonth(); renderYear(); renderCat();
- 
+
 /* ---- PWA: Service Worker 登録 ---- */
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
@@ -981,4 +842,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
- 
