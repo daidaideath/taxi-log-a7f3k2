@@ -47,6 +47,7 @@ header{
 }
 header h1{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--gold-l);letter-spacing:.14em}
 header .sub{font-size:10px;color:var(--panel-tx);opacity:.75;letter-spacing:.2em;margin-top:2px}
+header .upd{font-size:8.5px;color:var(--panel-tx);opacity:.5;letter-spacing:.12em;margin-top:2px}
 nav{
   position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;
   background:linear-gradient(180deg,var(--panel),#1d1710);
@@ -137,26 +138,13 @@ table.list tr.total td{border-top:2px solid var(--gold);background:var(--parch-d
 .fbar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
 .fbar button{padding:6px 12px;border:1.5px solid var(--gold);border-radius:3px;background:var(--parch);color:var(--ink);font-size:12.5px;font-family:var(--sans)}
 .fbar button.on{background:var(--panel);color:var(--gold-l);font-weight:700}
-/* ===== モーダル ===== */
-#ovl{position:fixed;inset:0;background:rgba(24,17,8,.72);z-index:50;display:none;align-items:flex-end;justify-content:center}
-#ovl.show{display:flex}
-#modal{
-  width:100%;max-width:760px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  background:var(--parch-l);border:2px solid var(--gold);border-bottom:none;
-  border-radius:10px 10px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.5);
-  padding:0 14px calc(20px + env(safe-area-inset-bottom));
+/* ===== 日別ビュー ===== */
+.dsel{
+  font-family:var(--serif);font-size:16px;font-weight:700;color:var(--ink);
+  background:var(--parch);border:1.5px solid var(--gold);border-radius:3px;
+  padding:5px 12px;letter-spacing:.04em;
 }
-#modal .mhead{
-  position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;
-  background:var(--parch-l);padding:12px 0 8px;margin:0 0 4px;
-  border-bottom:1.5px solid var(--line);
-}
-#modal .mhead h3{flex:1;min-width:0;font-size:16px;letter-spacing:.04em}
-#modal .mnav{width:36px;height:32px;border:1.5px solid var(--gold);border-radius:4px;background:var(--parch);color:var(--ink);font-size:16px;font-weight:700;flex-shrink:0}
-#modal .mnav:disabled{opacity:.35}
-#modal .mx{width:30px;height:30px;border:1.5px solid var(--gold-d);border-radius:50%;background:var(--parch);color:var(--ink-2);font-size:16px;line-height:1;flex-shrink:0;padding:0}
-#modal h3{font-family:var(--serif);font-size:17px;text-align:center;letter-spacing:.1em}
-#modal .cat-line{text-align:center;font-size:11.5px;color:var(--ink-3);margin:2px 0 10px}
+.gsel button:disabled{opacity:.35}
 .bandbar{display:flex;align-items:flex-end;gap:1.5px;height:74px;margin:10px 2px 2px;position:relative}
 .bandbar .b{flex:1;background:linear-gradient(180deg,var(--gold-l),var(--gold));border-radius:1px 1px 0 0;min-height:1px;position:relative;z-index:2}
 .bandbar .b.top{background:linear-gradient(180deg,#c0553f,var(--hi))}
@@ -245,6 +233,7 @@ const PIN = "511666";
   </div>
   <h1>乗 務 実 績</h1>
   <div class="sub">DRIVING RECORD VIEWER</div>
+  <div class="upd" id="lastUpd"></div>
 </header>
 
 <main>
@@ -285,9 +274,32 @@ const PIN = "511666";
       <div id="fareDist"></div>
     </div>
     <div class="frame">
-      <h2 class="ttl">トップ10運収</h2><div class="rule"></div>
-      <div class="scr"><table class="list" id="top10T"></table></div>
-      <div class="note">乗車明細（¥5,000以上）からのランキング。行タップで日別詳細を開きます。</div>
+      <h2 class="ttl">トップ20運収</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="mTopT"></table></div>
+      <div class="note">乗車明細（¥5,000以上）からのランキング。行タップで日別表示へ。</div>
+    </div>
+  </section>
+
+  <!-- ===== 日別ビュー ===== -->
+  <section id="v-day" class="view">
+    <div class="gsel">
+      <button id="dPrev">‹</button>
+      <span class="dsel" id="dLabel">–</span>
+      <button id="dNext">›</button>
+      <div class="range" id="dCat"></div>
+    </div>
+    <div class="kpi" id="dKpi"></div>
+    <div class="frame">
+      <h2 class="ttl">時間帯別</h2><div class="rule"></div>
+      <div id="dBand"></div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">流し・迎車 内訳</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="dBreak"></table></div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">¥5,000以上の乗車</h2><div class="rule"></div>
+      <div id="dRides"></div>
     </div>
   </section>
 
@@ -308,9 +320,9 @@ const PIN = "511666";
       <div class="scr"><table class="list" id="yT"></table></div>
     </div>
     <div class="frame">
-      <h2 class="ttl">トップ20運収</h2><div class="rule"></div>
-      <div class="scr"><table class="list" id="top20T"></table></div>
-      <div class="note">乗車明細（¥5,000以上）からのランキング。行タップで日別詳細を開きます。</div>
+      <h2 class="ttl">トップ30運収</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="yTopT"></table></div>
+      <div class="note">乗車明細（¥5,000以上）からのランキング。行タップで日別表示へ。</div>
     </div>
   </section>
 
@@ -338,11 +350,10 @@ const PIN = "511666";
 
 <nav>
   <button data-v="month" class="on">月度</button>
+  <button data-v="day">日別</button>
   <button data-v="year">年間</button>
   <button data-v="cat">カテゴリ</button>
 </nav>
-
-<div id="ovl"><div id="modal"></div></div>
 
 <script src="data.js"></script>
 <script>
@@ -350,6 +361,7 @@ const PIN = "511666";
 const D = window.APP_DATA;
 const DAYS = D.days;
 const byDate = {}; DAYS.forEach(d => byDate[d.date] = d);
+document.getElementById('lastUpd').textContent = 'LAST UPDATE ' + String(D.generated||'').replace(/-/g,'/');
 const yen = v => v==null ? '–' : '¥' + Math.round(v).toLocaleString();
 const man = v => (v/10000).toFixed(1);
 const pct = v => v==null ? '–' : (v*100).toFixed(1) + '%';
@@ -644,8 +656,8 @@ function renderMonth(){
   // 単価分布
   renderFareDist(list);
 
-  // トップ10運収
-  renderTopRides(list, 10, 'top10T');
+  // トップ20運収
+  renderTopRides(list, 20, 'mTopT');
 
   // 最新月度なら「最新」ボタンを隠す
   gNow.style.visibility = curG===GEKIDOS[GEKIDOS.length-1] ? 'hidden' : 'visible';
@@ -682,45 +694,46 @@ function renderFareDist(list){
   el.innerHTML=h;
 }
 
-/* ---- 日別詳細 ---- */
+/* ---- 日別ビュー ---- */
 let curDayKey=null;
 function openDay(key){
   const d = byDate[key]; if(!d) return;
   curDayKey = d.date;
-  const dayIdx = DAYS.findIndex(x=>x.date===d.date);
+  if(d.gekido!==curG){ curG=d.gekido; gSel.value=curG; renderMonth(); }
+  renderDay();
+  switchView('day');
+}
+function moveDay(step){
+  const idx=DAYS.findIndex(x=>x.date===curDayKey);
+  if(idx<0) return;
+  const ni=idx+step;
+  if(ni<0 || ni>=DAYS.length) return;
+  openDay(DAYS[ni].date);
+}
+document.getElementById('dPrev').onclick=()=>moveDay(-1);
+document.getElementById('dNext').onclick=()=>moveDay(1);
+
+function renderDay(){
+  const d = byDate[curDayKey]; if(!d) return;
+  const idx = DAYS.findIndex(x=>x.date===d.date);
   const dt = pd(d.date);
   const hol = isHoliday(dt);
-  let h = `<div class="mhead">
-      <button class="mnav" id="mPrev"${dayIdx<=0?' disabled':''}>‹</button>
-      <h3>${dt.getFullYear()}/${fmtMD(dt)}（${esc(d.dow)}${hol?'・祝':''}）</h3>
-      <button class="mnav" id="mNext"${dayIdx>=DAYS.length-1?' disabled':''}>›</button>
-      <button class="mx" id="mclose">×</button>
-    </div>
-    <div class="cat-line">${esc(d.cat)}　${esc(d.kaitei)}</div>
-    <div class="kpi">
-      <div class="cell"><div class="lb">売上</div><div class="vl num">${man(d.sales)}<small>万</small></div></div>
-      <div class="cell"><div class="lb">回数</div><div class="vl num">${d.rides}<small>回</small></div></div>
-      <div class="cell"><div class="lb">迎車</div><div class="vl num">${d.pickups}<small>回</small></div></div>
-      <div class="cell"><div class="lb">時間売上</div><div class="vl num">${kn(d.hourlySales)}</div></div>
-      <div class="cell"><div class="lb">平均単価</div><div class="vl num">${kn(d.avgFare)}</div></div>
-      <div class="cell"><div class="lb">稼働時間</div><div class="vl num">${d.workH?d.workH.toFixed(1):'–'}<small>h</small></div></div>
-    </div>
-    <table class="list" style="margin-top:2px">
-      <tr><th>内訳</th><th>売上</th><th>回数</th><th>単価</th></tr>
-      <tr><td>流し</td><td class="n num">${yen(d.cruiseSales)}</td><td class="n num">${d.rides-d.pickups}</td><td class="n num">${kn(d.cruiseFare)}</td></tr>
-      <tr><td>迎車</td><td class="n num">${yen(d.pickupSales)}</td><td class="n num">${d.pickups}</td><td class="n num">${kn(d.pickupFare)}</td></tr>
-    </table>`;
-  if(d.rides5k && d.rides5k.length){
-    h += `<h3 style="margin-top:14px;font-size:14px">¥5,000以上の乗車（${d.rides5k.length}件）</h3>
-      <table class="list" style="margin-top:6px">
-      <tr><th>時刻</th><th>乗車地 → 降車地</th><th>金額</th></tr>`;
-    d.rides5k.forEach(r=>{
-      h+=`<tr><td class="num" style="vertical-align:top">${esc(r.t)}${r.pk?'<span class="cat-b"> 迎</span>':''}</td>
-        <td style="white-space:normal;line-height:1.45">${esc(r.from)} → ${esc(r.to)}${r.note?`<div class="cat-b">${esc(r.note)}</div>`:''}</td>
-        <td class="n num" style="vertical-align:top">${yen(r.fare)}</td></tr>`;
-    });
-    h += '</table>';
-  }
+  document.getElementById('dPrev').disabled = idx<=0;
+  document.getElementById('dNext').disabled = idx>=DAYS.length-1;
+  document.getElementById('dLabel').textContent = `${dt.getFullYear()}/${fmtMD(dt)}（${d.dow}${hol?'・祝':''}）`;
+  document.getElementById('dCat').textContent = `${d.cat}　${d.kaitei||''}`;
+
+  // サマリー
+  document.getElementById('dKpi').innerHTML = `
+    <div class="cell"><div class="lb">売上</div><div class="vl num">${man(d.sales)}<small>万</small></div></div>
+    <div class="cell"><div class="lb">回数</div><div class="vl num">${d.rides}<small>回</small></div></div>
+    <div class="cell"><div class="lb">迎車</div><div class="vl num">${d.pickups}<small>回</small></div></div>
+    <div class="cell"><div class="lb">時間売上</div><div class="vl num">${kn(d.hourlySales)}</div></div>
+    <div class="cell"><div class="lb">平均単価</div><div class="vl num">${kn(d.avgFare)}</div></div>
+    <div class="cell"><div class="lb">稼働時間</div><div class="vl num">${d.workH?d.workH.toFixed(1):'–'}<small>h</small></div></div>`;
+
+  // 時間帯別
+  let bh='';
   if(d.bands){
     const hrs=blockHours(d);
     const precise = d.outH!=null && d.inH!=null && d.outH>=13 && d.inH>d.outH;
@@ -729,63 +742,61 @@ function openDay(key){
       const r=seg.reduce((a,x)=>a+x[0],0), p=seg.reduce((a,x)=>a+x[1],0), sl=seg.reduce((a,x)=>a+x[2],0);
       return {nm,r,p,sl,hourly:hrs[bi]>0?sl/hrs[bi]:null};
     }).filter(b=>b.r>0);
-    h += `<h3 style="margin-top:14px;font-size:14px">時間帯別</h3>
-      <table class="list" style="margin-top:6px">
+    bh += `<div class="scr"><table class="list">
       <tr><th>時間帯</th><th>売上</th><th>回</th><th>迎</th><th>時売</th></tr>`;
     bl.forEach(b=>{
-      h+=`<tr><td>${b.nm}</td><td class="n num">${yen(b.sl)}</td>
+      bh+=`<tr><td>${b.nm}</td><td class="n num">${yen(b.sl)}</td>
         <td class="n num">${b.r}</td><td class="n num">${b.p}</td>
         <td class="n num">${kn(b.hourly)}</td></tr>`;
     });
-    h += `</table><div class="note" style="margin-top:4px">時売＝各区分の売上÷区分内の稼働時間${precise?'（出庫・帰庫時刻から算出）':'（乗車のあった時間帯の範囲からの推定）'}。</div>`;
+    bh += `</table></div><div class="note" style="margin-top:4px">時売＝各区分の売上÷区分内の稼働時間${precise?'（出庫・帰庫時刻から算出）':'（乗車のあった時間帯の範囲からの推定）'}。</div>`;
     const mx = Math.max(1,...d.bands.map(x=>x[2]));
     let gl='';
     for(let v=2000; v<mx; v+=2000){
       const lb = v%6000===0 ? `<span>${v>=10000?'¥'+(v/10000)+'万':'¥'+v/1000+'千'}</span>` : '';
       gl+=`<div class="gridline" style="bottom:${v/mx*100}%">${lb}</div>`;
     }
-    h += `<div class="bandbar">`+gl+d.bands.map(x=>
+    bh += `<div class="bandbar">`+gl+d.bands.map(x=>
       `<div class="b${x[2]===mx&&x[2]>0?' top':''}" style="height:${Math.max(1,x[2]/mx*100)}%"></div>`).join('')+`</div>
       <div class="bandlbl"><span>13</span><span></span><span></span><span>16</span><span></span><span></span><span>19</span><span></span><span></span><span>22</span><span></span><span></span><span>1</span><span></span><span></span><span>4</span><span></span><span></span><span>7</span><span></span><span></span><span>10</span><span></span><span></span></div>
       <div class="note">1時間刻みの売上分布（13時起点・翌13時まで）。緋色が最高帯。破線は¥2,000刻み（ラベルは¥6,000毎）。</div>`;
   } else {
-    h += `<div class="note">この日の時間帯別データはありません。</div>`;
+    bh = `<div class="note" style="margin-top:0">この日の時間帯別データはありません。</div>`;
   }
-  const modal=document.getElementById('modal');
-  modal.innerHTML=h;
-  modal.scrollTop=0;
-  document.getElementById('ovl').classList.add('show');
-  document.getElementById('mclose').onclick=closeModal;
-  document.getElementById('mPrev').onclick=()=>moveDay(-1);
-  document.getElementById('mNext').onclick=()=>moveDay(1);
-}
-function closeModal(){document.getElementById('ovl').classList.remove('show');}
-function moveDay(step){
-  const idx=DAYS.findIndex(x=>x.date===curDayKey);
-  if(idx<0) return;
-  const ni=idx+step;
-  if(ni<0 || ni>=DAYS.length) return;
-  const nd=DAYS[ni];
-  if(nd.gekido!==curG){ curG=nd.gekido; gSel.value=curG; renderMonth(); }
-  openDay(nd.date);
-}
-document.getElementById('ovl').addEventListener('click',e=>{if(e.target.id==='ovl')closeModal();});
+  document.getElementById('dBand').innerHTML=bh;
 
-/* ---- 日別モーダルのスワイプ操作 ---- */
-/* 左右: 前日/翌日（データのある日にジャンプ、月度をまたぐと月度表示も更新）
-   閉じるのは右上×か背景タップ。縦スクロール中は誤発火しないようスクロール量が閾値内のときのみ有効 */
+  // 流し・迎車 内訳
+  document.getElementById('dBreak').innerHTML = `
+    <tr><th>内訳</th><th>売上</th><th>回数</th><th>単価</th></tr>
+    <tr><td>流し</td><td class="n num">${yen(d.cruiseSales)}</td><td class="n num">${d.rides-d.pickups}</td><td class="n num">${kn(d.cruiseFare)}</td></tr>
+    <tr><td>迎車</td><td class="n num">${yen(d.pickupSales)}</td><td class="n num">${d.pickups}</td><td class="n num">${kn(d.pickupFare)}</td></tr>`;
+
+  // ¥5,000以上の乗車
+  const rEl=document.getElementById('dRides');
+  if(d.rides5k && d.rides5k.length){
+    let rh=`<div class="scr"><table class="list">
+      <tr><th>時刻</th><th>乗車地 → 降車地</th><th>金額</th></tr>`;
+    d.rides5k.forEach(r=>{
+      rh+=`<tr><td class="num" style="vertical-align:top">${esc(r.t)}${r.pk?'<span class="cat-b"> 迎</span>':''}</td>
+        <td style="white-space:normal;line-height:1.45">${esc(r.from)} → ${esc(r.to)}${r.note?`<div class="cat-b">${esc(r.note)}</div>`:''}</td>
+        <td class="n num" style="vertical-align:top">${yen(r.fare)}</td></tr>`;
+    });
+    rh+='</table></div>';
+    rEl.innerHTML=rh;
+  } else {
+    rEl.innerHTML='<div class="note" style="margin-top:0">この日の¥5,000以上の乗車はありません。</div>';
+  }
+}
+
+/* スワイプで前日/翌日（日別ビュー全体） */
 (function(){
-  const modal=document.getElementById('modal'), ovl=document.getElementById('ovl');
-  let sx=0, sy=0, sTop=0, on=false;
-  ovl.addEventListener('touchstart',e=>{
-    if(!ovl.classList.contains('show')) return;
-    const t=e.touches[0]; sx=t.clientX; sy=t.clientY; sTop=modal.scrollTop; on=true;
-  },{passive:true});
-  ovl.addEventListener('touchend',e=>{
+  const el=document.getElementById('v-day');
+  let sx=0, sy=0, on=false;
+  el.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;on=true;},{passive:true});
+  el.addEventListener('touchend',e=>{
     if(!on) return; on=false;
-    if(Math.abs(modal.scrollTop-sTop)>10) return;  // 縦スクロール中は無視
-    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
-    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.3) moveDay(dx>0?-1:1);
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>64 && Math.abs(dy)<48) moveDay(dx>0?-1:1);
   },{passive:true});
 })();
 
@@ -847,7 +858,7 @@ function renderYear(){
   yT.querySelectorAll('tr.tap').forEach(tr=>tr.onclick=()=>{
     curG=tr.dataset.g; gSel.value=curG; renderMonth(); switchView('month');
   });
-  renderTopRides(all, 20, 'top20T');
+  renderTopRides(all, 30, 'yTopT');
 }
 
 /* ---- カテゴリ ---- */
@@ -897,7 +908,10 @@ function switchView(v){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   window.scrollTo(0,0);
 }
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.v));
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  if(b.dataset.v==='day') openDay(curDayKey || DAYS[DAYS.length-1].date);
+  else switchView(b.dataset.v);
+});
 
 /* ---- 表示トグル（ヒート色が変わるので月度を再描画） ---- */
 const tDark=document.getElementById('tDark');
