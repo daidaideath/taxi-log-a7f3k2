@@ -833,10 +833,16 @@ if(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches){ tDa
 
 renderMonth(); renderYear(); renderCat();
 
-/* ---- PWA: Service Worker 登録 ---- */
+/* ---- PWA: Service Worker 登録（新バージョン自動反映） ---- */
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js', {updateViaCache:'none'})
+      .then(reg=>{ reg.update().catch(()=>{}); })
+      .catch(()=>{});
+    let swReloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(swReloaded) return; swReloaded=true; location.reload();
+    });
   });
 }
 </script>
