@@ -37,7 +37,6 @@ body{
   background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 8%,var(--bg2) 92%,var(--bg1) 100%);
   min-height:100vh;padding-bottom:calc(64px + env(safe-area-inset-bottom));
 }
-body.big{font-size:15.5px}
 .num{font-variant-numeric:tabular-nums;font-weight:800}
 header{
   background:linear-gradient(180deg,#332817,var(--panel));
@@ -71,7 +70,12 @@ main{max-width:760px;margin:0 auto;padding:12px 10px 20px}
 h2.ttl{font-family:var(--serif);font-size:16px;font-weight:700;text-align:center;letter-spacing:.18em;margin-bottom:4px}
 h2.ttl::before,h2.ttl::after{content:"◆";color:var(--gold);font-size:10px;margin:0 8px;vertical-align:2px}
 .rule{height:2px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-l),var(--gold),transparent);margin:2px auto 10px;max-width:88%}
-.gsel{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.gsel{
+  display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
+  position:sticky;top:var(--hdrH,54px);z-index:15;background:var(--bg2);
+  margin:-12px -10px 10px;padding:10px 10px 8px;
+  border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(45,33,19,.18);
+}
 .gsel button{width:38px;height:34px;border:1.5px solid var(--gold);border-radius:3px;background:var(--parch);color:var(--ink);font-size:16px;font-weight:700}
 .gsel select{
   font-family:var(--serif);font-size:16px;font-weight:700;color:var(--ink);
@@ -140,9 +144,17 @@ table.list tr.total td{border-top:2px solid var(--gold);background:var(--parch-d
   width:100%;max-width:760px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
   background:var(--parch-l);border:2px solid var(--gold);border-bottom:none;
   border-radius:10px 10px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.5);
-  padding:14px 14px calc(20px + env(safe-area-inset-bottom));
+  padding:0 14px calc(20px + env(safe-area-inset-bottom));
 }
-#modal .grip{width:44px;height:4px;border-radius:2px;background:var(--gold-d);margin:0 auto 10px}
+#modal .mhead{
+  position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;
+  background:var(--parch-l);padding:12px 0 8px;margin:0 0 4px;
+  border-bottom:1.5px solid var(--line);
+}
+#modal .mhead h3{flex:1;min-width:0;font-size:16px;letter-spacing:.04em}
+#modal .mnav{width:36px;height:32px;border:1.5px solid var(--gold);border-radius:4px;background:var(--parch);color:var(--ink);font-size:16px;font-weight:700;flex-shrink:0}
+#modal .mnav:disabled{opacity:.35}
+#modal .mx{width:30px;height:30px;border:1.5px solid var(--gold-d);border-radius:50%;background:var(--parch);color:var(--ink-2);font-size:16px;line-height:1;flex-shrink:0;padding:0}
 #modal h3{font-family:var(--serif);font-size:17px;text-align:center;letter-spacing:.1em}
 #modal .cat-line{text-align:center;font-size:11.5px;color:var(--ink-3);margin:2px 0 10px}
 .bandbar{display:flex;align-items:flex-end;gap:1.5px;height:74px;margin:10px 2px 2px;position:relative}
@@ -153,7 +165,6 @@ table.list tr.total td{border-top:2px solid var(--gold);background:var(--parch-d
 body.dark .gridline span{background:var(--parch-l)}
 .bandlbl{display:flex;gap:1.5px;font-size:8px;color:var(--ink-3);margin-bottom:8px}
 .bandlbl span{flex:1;text-align:center}
-.closebtn{display:block;width:100%;margin-top:12px;padding:10px;border:1.5px solid var(--gold);border-radius:4px;background:var(--parch);color:var(--ink);font-size:13px;font-family:var(--sans)}
 .view{display:none}.view.on{display:block}
 .bar-row{display:flex;align-items:center;gap:6px;margin:3px 0}
 .bar-row .m{width:52px;font-size:11px;color:var(--ink-2);text-align:right;flex-shrink:0}
@@ -231,7 +242,6 @@ const PIN = "511666";
 <header>
   <div class="htoggle">
     <button id="tDark" title="ダークモード">◐</button>
-    <button id="tBig" title="文字サイズ">A<sup>+</sup></button>
   </div>
   <h1>乗 務 実 績</h1>
   <div class="sub">DRIVING RECORD VIEWER</div>
@@ -244,6 +254,7 @@ const PIN = "511666";
       <button id="gPrev">‹</button>
       <select id="gSel"></select>
       <button id="gNext">›</button>
+      <button id="gNow" style="width:auto;padding:0 10px;font-size:12.5px">最新</button>
       <div class="range" id="gRange"></div>
     </div>
     <div class="kpi" id="mKpi"></div>
@@ -273,6 +284,11 @@ const PIN = "511666";
       <h2 class="ttl">単価分布</h2><div class="rule"></div>
       <div id="fareDist"></div>
     </div>
+    <div class="frame">
+      <h2 class="ttl">トップ10運収</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="top10T"></table></div>
+      <div class="note">乗車明細（¥5,000以上）からのランキング。行タップで日別詳細を開きます。</div>
+    </div>
   </section>
 
   <!-- ===== 年間ビュー ===== -->
@@ -291,6 +307,11 @@ const PIN = "511666";
       <h2 class="ttl">月度別サマリー</h2><div class="rule"></div>
       <div class="scr"><table class="list" id="yT"></table></div>
     </div>
+    <div class="frame">
+      <h2 class="ttl">トップ20運収</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="top20T"></table></div>
+      <div class="note">乗車明細（¥5,000以上）からのランキング。行タップで日別詳細を開きます。</div>
+    </div>
   </section>
 
   <!-- ===== カテゴリビュー ===== -->
@@ -306,6 +327,11 @@ const PIN = "511666";
       <div class="scr"><table class="list" id="cT"></table></div>
       <div id="cBars" style="margin-top:10px"></div>
       <div class="note">出番数の少ないカテゴリは平均がぶれやすい点に注意。</div>
+    </div>
+    <div class="frame">
+      <h2 class="ttl">カテゴリ別×時間帯別 時間売上</h2><div class="rule"></div>
+      <div class="scr"><table class="list" id="cBandT"></table></div>
+      <div class="note">選択期間の実績。時間売上は乗車のあった時間帯の範囲から算出した推定値（円/h）。緋色は各カテゴリの最高帯。</div>
     </div>
   </section>
 </main>
@@ -386,6 +412,8 @@ function agg(list){
   const sales=s('sales'), rides=s('rides'), pk=s('pickups'), wh=s('workH');
   return {n:list.length, sales, rides, pk,
     perShift: sales/list.length,
+    avgRides: rides/list.length,
+    avgPk: pk/list.length,
     hourly: wh? sales/wh : null,
     fare: rides? sales/rides : null,
     pkRate: rides? pk/rides : null,
@@ -399,7 +427,10 @@ function kpiHTML(a){
   <div class="cell"><div class="lb">1出番平均</div><div class="vl num">${man(a.perShift)}<small>万</small></div></div>
   <div class="cell"><div class="lb">時間売上</div><div class="vl num">${kn(a.hourly)}<small>円/h</small></div></div>
   <div class="cell"><div class="lb">平均単価</div><div class="vl num">${kn(a.fare)}<small>円</small></div></div>
-  <div class="cell"><div class="lb">迎車率</div><div class="vl num">${pct(a.pkRate)}</div></div>`;
+  <div class="cell"><div class="lb">迎車率</div><div class="vl num">${pct(a.pkRate)}</div></div>
+  <div class="cell"><div class="lb">平均回数</div><div class="vl num">${a.avgRides.toFixed(1)}<small>回</small></div></div>
+  <div class="cell"><div class="lb">平均迎車</div><div class="vl num">${a.avgPk.toFixed(1)}<small>回</small></div></div>
+  <div class="cell"><div class="lb">総回数</div><div class="vl num">${kn(a.rides)}<small>回</small></div></div>`;
 }
 
 let curG = GEKIDOS[GEKIDOS.length-1];
@@ -413,6 +444,8 @@ function moveG(step){
 }
 document.getElementById('gPrev').onclick=()=>moveG(-1);
 document.getElementById('gNext').onclick=()=>moveG(1);
+const gNow=document.getElementById('gNow');
+gNow.onclick=()=>{curG=GEKIDOS[GEKIDOS.length-1];gSel.value=curG;renderMonth();};
 
 /* スワイプで月度切替（月度ビュー全体） */
 (function(){
@@ -474,6 +507,52 @@ function catBandAgg(list){
     });
   });
   return acc;
+}
+function renderCatBand(list, elId, emptyMsg){
+  const cb = catBandAgg(list);
+  const order=['平日→平日','平日→休日','休日→休日','休日→平日'];
+  const cats=Object.keys(cb).sort((x,y)=>{
+    const ix=order.indexOf(x),iy=order.indexOf(y);
+    return (ix<0?99:ix)-(iy<0?99:iy);
+  });
+  const el=document.getElementById(elId);
+  if(!cats.length){ el.innerHTML=`<tr><td>${emptyMsg}</td></tr>`; return; }
+  let h='<tr><th>時間帯</th>'+cats.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
+  const best={};
+  cats.forEach(c=>{
+    let b=-1,bi=-1;
+    cb[c].forEach((x,i)=>{const v=x.h?x.s/x.h:-1; if(v>b){b=v;bi=i;}});
+    best[c]=bi;
+  });
+  BLOCKS.forEach(([nm],bi)=>{
+    h+=`<tr><td>${nm}</td>`+cats.map(c=>{
+      const x=cb[c][bi], v=x.h? x.s/x.h : null;
+      return `<td class="n num${best[c]===bi?' hi':''}">${v==null?'–':kn(v)}</td>`;
+    }).join('')+'</tr>';
+  });
+  el.innerHTML=h;
+}
+
+/* ---- トップ運収（乗車明細¥5,000以上から） ---- */
+function renderTopRides(list, n, elId){
+  const rows=[];
+  list.forEach(d=>{(d.rides5k||[]).forEach(r=>rows.push({date:d.date, ...r}));});
+  rows.sort((a,b)=>b.fare-a.fare);
+  const top=rows.slice(0,n);
+  const el=document.getElementById(elId);
+  if(!top.length){ el.innerHTML='<tr><td>この期間の乗車明細データはありません</td></tr>'; return; }
+  let h='<tr><th>#</th><th>日付</th><th>時刻</th><th>乗車地 → 降車地</th><th>金額</th></tr>';
+  top.forEach((r,i)=>{
+    const dt=pd(r.date);
+    h+=`<tr class="tap" data-d="${r.date}">
+      <td class="n num">${i+1}</td>
+      <td class="num">${fmtMD(dt)}(${DOWJ[dt.getDay()]})</td>
+      <td class="num" style="vertical-align:top">${esc(r.t)}${r.pk?'<span class="cat-b"> 迎</span>':''}</td>
+      <td style="white-space:normal;line-height:1.4">${esc(r.from)} → ${esc(r.to)}</td>
+      <td class="n num">${yen(r.fare)}</td></tr>`;
+  });
+  el.innerHTML=h;
+  el.querySelectorAll('tr.tap').forEach(tr=>tr.onclick=()=>openDay(tr.dataset.d));
 }
 
 function renderMonth(){
@@ -560,33 +639,16 @@ function renderMonth(){
   dayT.querySelectorAll('tr.tap').forEach(tr=>tr.onclick=()=>openDay(tr.dataset.d));
 
   // カテゴリ別×時間帯別 時間売上（当月度）
-  const cb = catBandAgg(list);
-  const order=['平日→平日','平日→休日','休日→休日','休日→平日'];
-  const cats=Object.keys(cb).sort((x,y)=>{
-    const ix=order.indexOf(x),iy=order.indexOf(y);
-    return (ix<0?99:ix)-(iy<0?99:iy);
-  });
-  if(cats.length){
-    let h='<tr><th>時間帯</th>'+cats.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
-    const best={};
-    cats.forEach(c=>{
-      let b=-1,bi=-1;
-      cb[c].forEach((x,i)=>{const v=x.h?x.s/x.h:-1; if(v>b){b=v;bi=i;}});
-      best[c]=bi;
-    });
-    BLOCKS.forEach(([nm],bi)=>{
-      h+=`<tr><td>${nm}</td>`+cats.map(c=>{
-        const x=cb[c][bi], v=x.h? x.s/x.h : null;
-        return `<td class="n num${best[c]===bi?' hi':''}">${v==null?'–':kn(v)}</td>`;
-      }).join('')+'</tr>';
-    });
-    document.getElementById('catBandT').innerHTML=h;
-  } else {
-    document.getElementById('catBandT').innerHTML='<tr><td>この月度の時間帯別データはありません</td></tr>';
-  }
+  renderCatBand(list, 'catBandT', 'この月度の時間帯別データはありません');
 
   // 単価分布
   renderFareDist(list);
+
+  // トップ10運収
+  renderTopRides(list, 10, 'top10T');
+
+  // 最新月度なら「最新」ボタンを隠す
+  gNow.style.visibility = curG===GEKIDOS[GEKIDOS.length-1] ? 'hidden' : 'visible';
 }
 
 const FARE = window.APP_DATA.fareLabels || [];
@@ -621,12 +683,19 @@ function renderFareDist(list){
 }
 
 /* ---- 日別詳細 ---- */
+let curDayKey=null;
 function openDay(key){
   const d = byDate[key]; if(!d) return;
+  curDayKey = d.date;
+  const dayIdx = DAYS.findIndex(x=>x.date===d.date);
   const dt = pd(d.date);
   const hol = isHoliday(dt);
-  let h = `<div class="grip"></div>
-    <h3>${dt.getFullYear()}/${fmtMD(dt)}（${esc(d.dow)}${hol?'・祝':''}）</h3>
+  let h = `<div class="mhead">
+      <button class="mnav" id="mPrev"${dayIdx<=0?' disabled':''}>‹</button>
+      <h3>${dt.getFullYear()}/${fmtMD(dt)}（${esc(d.dow)}${hol?'・祝':''}）</h3>
+      <button class="mnav" id="mNext"${dayIdx>=DAYS.length-1?' disabled':''}>›</button>
+      <button class="mx" id="mclose">×</button>
+    </div>
     <div class="cat-line">${esc(d.cat)}　${esc(d.kaitei)}</div>
     <div class="kpi">
       <div class="cell"><div class="lb">売上</div><div class="vl num">${man(d.sales)}<small>万</small></div></div>
@@ -642,14 +711,13 @@ function openDay(key){
       <tr><td>迎車</td><td class="n num">${yen(d.pickupSales)}</td><td class="n num">${d.pickups}</td><td class="n num">${kn(d.pickupFare)}</td></tr>
     </table>`;
   if(d.rides5k && d.rides5k.length){
-    const mxF=Math.max(...d.rides5k.map(r=>r.fare));
     h += `<h3 style="margin-top:14px;font-size:14px">¥5,000以上の乗車（${d.rides5k.length}件）</h3>
       <table class="list" style="margin-top:6px">
       <tr><th>時刻</th><th>乗車地 → 降車地</th><th>金額</th></tr>`;
     d.rides5k.forEach(r=>{
       h+=`<tr><td class="num" style="vertical-align:top">${esc(r.t)}${r.pk?'<span class="cat-b"> 迎</span>':''}</td>
         <td style="white-space:normal;line-height:1.45">${esc(r.from)} → ${esc(r.to)}${r.note?`<div class="cat-b">${esc(r.note)}</div>`:''}</td>
-        <td class="n num${r.fare===mxF?' hi':''}" style="vertical-align:top">${yen(r.fare)}</td></tr>`;
+        <td class="n num" style="vertical-align:top">${yen(r.fare)}</td></tr>`;
     });
     h += '</table>';
   }
@@ -661,15 +729,13 @@ function openDay(key){
       const r=seg.reduce((a,x)=>a+x[0],0), p=seg.reduce((a,x)=>a+x[1],0), sl=seg.reduce((a,x)=>a+x[2],0);
       return {nm,r,p,sl,hourly:hrs[bi]>0?sl/hrs[bi]:null};
     }).filter(b=>b.r>0);
-    const bestS = Math.max(...bl.map(b=>b.sl));
-    const bestH = Math.max(...bl.map(b=>b.hourly||0));
     h += `<h3 style="margin-top:14px;font-size:14px">時間帯別</h3>
       <table class="list" style="margin-top:6px">
       <tr><th>時間帯</th><th>売上</th><th>回</th><th>迎</th><th>時売</th></tr>`;
     bl.forEach(b=>{
-      h+=`<tr><td>${b.nm}</td><td class="n num${b.sl===bestS?' hi':''}">${yen(b.sl)}</td>
+      h+=`<tr><td>${b.nm}</td><td class="n num">${yen(b.sl)}</td>
         <td class="n num">${b.r}</td><td class="n num">${b.p}</td>
-        <td class="n num${b.hourly===bestH?' hi':''}">${kn(b.hourly)}</td></tr>`;
+        <td class="n num">${kn(b.hourly)}</td></tr>`;
     });
     h += `</table><div class="note" style="margin-top:4px">時売＝各区分の売上÷区分内の稼働時間${precise?'（出庫・帰庫時刻から算出）':'（乗車のあった時間帯の範囲からの推定）'}。</div>`;
     const mx = Math.max(1,...d.bands.map(x=>x[2]));
@@ -685,18 +751,29 @@ function openDay(key){
   } else {
     h += `<div class="note">この日の時間帯別データはありません。</div>`;
   }
-  h += `<button class="closebtn" id="mclose">閉じる</button>`;
-  document.getElementById('modal').innerHTML=h;
+  const modal=document.getElementById('modal');
+  modal.innerHTML=h;
+  modal.scrollTop=0;
   document.getElementById('ovl').classList.add('show');
   document.getElementById('mclose').onclick=closeModal;
+  document.getElementById('mPrev').onclick=()=>moveDay(-1);
+  document.getElementById('mNext').onclick=()=>moveDay(1);
 }
 function closeModal(){document.getElementById('ovl').classList.remove('show');}
+function moveDay(step){
+  const idx=DAYS.findIndex(x=>x.date===curDayKey);
+  if(idx<0) return;
+  const ni=idx+step;
+  if(ni<0 || ni>=DAYS.length) return;
+  const nd=DAYS[ni];
+  if(nd.gekido!==curG){ curG=nd.gekido; gSel.value=curG; renderMonth(); }
+  openDay(nd.date);
+}
 document.getElementById('ovl').addEventListener('click',e=>{if(e.target.id==='ovl')closeModal();});
 
 /* ---- 日別モーダルのスワイプ操作 ---- */
 /* 左右: 前日/翌日（データのある日にジャンプ、月度をまたぐと月度表示も更新）
-   下:   モーダルを閉じる
-   モーダルの縦スクロール中は誤発火しないよう、スクロール量が閾値内のときのみ有効 */
+   閉じるのは右上×か背景タップ。縦スクロール中は誤発火しないようスクロール量が閾値内のときのみ有効 */
 (function(){
   const modal=document.getElementById('modal'), ovl=document.getElementById('ovl');
   let sx=0, sy=0, sTop=0, on=false;
@@ -708,22 +785,7 @@ document.getElementById('ovl').addEventListener('click',e=>{if(e.target.id==='ov
     if(!on) return; on=false;
     if(Math.abs(modal.scrollTop-sTop)>10) return;  // 縦スクロール中は無視
     const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
-    const ax=Math.abs(dx), ay=Math.abs(dy);
-    // 現在開いている日付を特定
-    const h3=modal.querySelector('h3'); if(!h3) return;
-    const m=h3.textContent.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/); if(!m) return;
-    const cur=`${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
-    const idx=DAYS.findIndex(d=>d.date===cur); if(idx<0) return;
-    if(ax>60 && ax>ay*1.3){                    // 横スワイプ: 前日/翌日
-      const ni = dx>0 ? idx-1 : idx+1;
-      if(ni>=0 && ni<DAYS.length){
-        const nd=DAYS[ni];
-        if(nd.gekido!==curG){ curG=nd.gekido; gSel.value=curG; renderMonth(); }
-        openDay(nd.date);
-      }
-    } else if(dy>80 && ay>ax*1.3){             // 下スワイプ: 閉じる
-      closeModal();
-    }
+    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.3) moveDay(dx>0?-1:1);
   },{passive:true});
 })();
 
@@ -734,8 +796,24 @@ const ySel=document.getElementById('ySel');
 ySel.innerHTML=YEARS.map(y=>`<option value="${y}">${y}年（月度）</option>`).join('');
 ySel.value=curY;
 ySel.onchange=()=>{curY=ySel.value;renderYear();};
-document.getElementById('yPrev').onclick=()=>{const i=YEARS.indexOf(curY);if(i>0){curY=YEARS[i-1];ySel.value=curY;renderYear();}};
-document.getElementById('yNext').onclick=()=>{const i=YEARS.indexOf(curY);if(i<YEARS.length-1){curY=YEARS[i+1];ySel.value=curY;renderYear();}};
+function moveY(step){
+  const i=YEARS.indexOf(curY)+step;
+  if(i>=0 && i<YEARS.length){curY=YEARS[i];ySel.value=curY;renderYear();}
+}
+document.getElementById('yPrev').onclick=()=>moveY(-1);
+document.getElementById('yNext').onclick=()=>moveY(1);
+
+/* スワイプで年度切替（年間ビュー全体） */
+(function(){
+  const el=document.getElementById('v-year');
+  let sx=0, sy=0, on=false;
+  el.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;on=true;},{passive:true});
+  el.addEventListener('touchend',e=>{
+    if(!on) return; on=false;
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>64 && Math.abs(dy)<48) moveY(dx>0?-1:1);
+  },{passive:true});
+})();
 
 function renderYear(){
   const gs = GEKIDOS.filter(g=>g.slice(0,4)===curY);
@@ -769,6 +847,7 @@ function renderYear(){
   yT.querySelectorAll('tr.tap').forEach(tr=>tr.onclick=()=>{
     curG=tr.dataset.g; gSel.value=curG; renderMonth(); switchView('month');
   });
+  renderTopRides(all, 20, 'top20T');
 }
 
 /* ---- カテゴリ ---- */
@@ -808,6 +887,7 @@ function renderCat(){
       <div class="track"><div class="fill${r.a.perShift===mx?' best':''}" style="width:${r.a.perShift/mx*100}%"></div></div>
       <div class="v num">${man(r.a.perShift)}万</div>
     </div>`).join('');
+  renderCatBand(list, 'cBandT', 'この期間の時間帯別データはありません');
 }
 
 /* ---- タブ ---- */
@@ -820,16 +900,21 @@ function switchView(v){
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.v));
 
 /* ---- 表示トグル（ヒート色が変わるので月度を再描画） ---- */
-const tDark=document.getElementById('tDark'), tBig=document.getElementById('tBig');
+const tDark=document.getElementById('tDark');
 tDark.onclick=()=>{
   const on=document.body.classList.toggle('dark');
   tDark.classList.toggle('on',on);
   document.querySelector('meta[name=theme-color]').setAttribute('content', on?'#15100A':'#2A2012');
   renderMonth();
 };
-tBig.onclick=()=>{ tBig.classList.toggle('on', document.body.classList.toggle('big')); };
 /* 端末のダーク設定を初期反映 */
 if(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches){ tDark.click(); }
+
+/* ---- 固定セレクタ用：ヘッダー高さをCSS変数に反映 ---- */
+const hdrEl=document.querySelector('header');
+function setHdrH(){document.documentElement.style.setProperty('--hdrH',hdrEl.offsetHeight+'px');}
+window.addEventListener('resize',setHdrH);
+setHdrH();
 
 renderMonth(); renderYear(); renderCat();
 
