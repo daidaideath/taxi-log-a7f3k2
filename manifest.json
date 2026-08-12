@@ -1,6 +1,6 @@
 {
-  "name": "乗務実績ビューア",
-  "short_name": "乗務実績",
+  "name": "DAIちゃん記録帳",
+  "short_name": "DAIちゃん",
   "description": "だいちゃんの営業データ閲覧アプリ",
   "start_url": "./",
   "scope": "./",
