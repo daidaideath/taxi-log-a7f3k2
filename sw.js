@@ -1,6 +1,6 @@
 /* DAIちゃん記録帳 Service Worker */
 /* ↓このバージョン番号は 更新.bat 実行時に自動で書き換わる（手で触らない） */
-const V = 'taxi-viewer-20260818012614';
+const V = 'taxi-viewer-20260818012828';
 const ASSETS = ['./', 'index.html', 'data.js', 'manifest.json',
                 'icon-192.png', 'icon-512.png', 'icon-maskable.png'];
 
